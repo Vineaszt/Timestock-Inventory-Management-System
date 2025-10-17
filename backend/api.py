@@ -21,8 +21,7 @@ from backend import database, receipt, graphs, analytics
 router = APIRouter()
 
 
-    
-@router.put("/products/update") # DONE
+@router.put("/products/update") 
 def update_product_data(request: Request, product: ProductUpdate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -45,7 +44,7 @@ def update_product_data(request: Request, product: ProductUpdate):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/material/update") # DONE
+@router.put("/material/update") 
 def update_material_api(request: Request, material: MaterialUpdate) -> Any:
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -71,9 +70,7 @@ def update_material_api(request: Request, material: MaterialUpdate) -> Any:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error: " + str(e))
-
-
-
+    
 # ---- Alerts ---
 CACHE_FILE = "alert_cache.json"
 
@@ -188,7 +185,7 @@ def sales_summary():
 def read_product_materials():
     return database.get_product_materials_grouped()
 
-@router.post("/product-materials/add") # DONE
+@router.post("/product-materials/add") 
 def create_product_materials(data: ProductMaterialBulkCreate, request: Request):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -209,7 +206,7 @@ def api_get_product_materials(product_id: str):
     return database.get_product_materials_by_product_id(product_id)
 
 
-@router.put("/product-materials/update") # DONE
+@router.put("/product-materials/update") 
 def api_update_product_material(payload: dict, request: Request):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -241,7 +238,7 @@ def api_update_product_material(payload: dict, request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error.")
 
-@router.delete("/product-materials/delete") # DONE
+@router.delete("/product-materials/delete") 
 def api_delete_product_material(request: Request):
     data = request.query_params
     user = request.session.get("user")
@@ -269,7 +266,7 @@ def get_categories():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/product-categories") # DONE
+@router.post("/product-categories") 
 def create_product_category(request: Request, data: ProductCategoryCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -286,7 +283,7 @@ def create_product_category(request: Request, data: ProductCategoryCreate):
 def get_material_categories():
     return database.get_material_categories().to_dict(orient="records")
 
-@router.post("/material-categories") # DONE
+@router.post("/material-categories") 
 def create_material_category(request: Request, data: MaterialCategoryCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -297,7 +294,7 @@ def create_material_category(request: Request, data: MaterialCategoryCreate):
         raise HTTPException(status_code=400, detail="Category already exists")
     return {"id": new_id}
 
-@router.put("/material-categories/{id}") # DONE
+@router.put("/material-categories/{id}") 
 def update_material_category(request: Request, id: str, data: MaterialCategoryUpdate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -306,7 +303,7 @@ def update_material_category(request: Request, id: str, data: MaterialCategoryUp
     database.update_material_category(id, data.dict(), admin_id=user["id"])
     return {"message": "Updated successfully"}
 
-@router.delete("/material-categories/{id}") # DONE
+@router.delete("/material-categories/{id}") # 
 def delete_material_category(id: str, request: Request):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -318,7 +315,7 @@ def delete_material_category(id: str, request: Request):
 
 # --- Materials ---
 
-@router.post("/stock-materials") # DONE
+@router.post("/stock-materials") # 
 def stock_materials_endpoint(
     request: Request,
     data: StockTransactionCreate,
@@ -370,7 +367,7 @@ def get_materials():
  
 
 
-@router.post("/materials") # DONE
+@router.post("/materials") #  
 def create_material(request: Request, data: MaterialCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -399,7 +396,7 @@ def delete_material(id: str, request: Request):
 def get_customers():
     return database.get_customers().to_dict(orient="records")
 
-@router.post("/customers") # DONE
+@router.post("/customers") #  
 def create_customer(request: Request, data: CustomerCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -411,7 +408,7 @@ def create_customer(request: Request, data: CustomerCreate):
     return {"message": result["message"]}
 
 
-@router.put("/customers/{id}") # DONE
+@router.put("/customers/{id}") #  
 def update_customer(request: Request, id: str, data: CustomerUpdate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -421,7 +418,7 @@ def update_customer(request: Request, id: str, data: CustomerUpdate):
     return {"message": "Updated successfully"}
 
 
-@router.delete("/customers/{id}") # DONE
+@router.delete("/customers/{id}") #  
 def delete_customer(request: Request, id: str):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -444,7 +441,7 @@ def get_product_quote(product_id: str):
 def get_products():
     return database.get_products().to_dict(orient="records")
 
-@router.post("/products") # DONE
+@router.post("/products") #  
 def create_product(request: Request, data: ProductCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -461,7 +458,7 @@ def create_product(request: Request, data: ProductCreate):
         raise HTTPException(status_code=400, detail=result["message"])
     return result
 
-@router.delete("/products/{id}") # DONE
+@router.delete("/products/{id}") #  
 def delete_product(request: Request, id: str):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -482,7 +479,7 @@ def delete_product(request: Request, id: str):
 def get_suppliers():
     return database.get_suppliers().to_dict(orient="records")
 
-@router.post("/suppliers") # DONE
+@router.post("/suppliers") #  
 def create_supplier(request: Request, data: SupplierCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -500,7 +497,7 @@ def create_supplier(request: Request, data: SupplierCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.put("/suppliers/{id}") # DONE
+@router.put("/suppliers/{id}") #  
 def update_supplier(request: Request, id: str, data: SupplierUpdate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -515,7 +512,7 @@ def update_supplier(request: Request, id: str, data: SupplierUpdate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.delete("/suppliers/{id}") # DONE
+@router.delete("/suppliers/{id}") #  
 def delete_supplier(request: Request, id: str):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -532,7 +529,7 @@ def delete_supplier(request: Request, id: str):
     
 # ----- Ordering Transaction ----
 
-@router.post("/orders") # DONE
+@router.post("/orders") #  
 def place_order(request: Request, order: OrderTransactionCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -552,7 +549,7 @@ def order_statuses():
     result = database.get_order_statuses()
     return result.to_dict(orient="records")
 
-@router.put("/orders/update-status") # DONE
+@router.put("/orders/update-status") #  
 def update_order_transaction_status(request: Request, data: OrderStatusUpdate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -633,10 +630,10 @@ def stock_flow_summary():
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# ------------ Receipt and Quote -----------
-
+# ------------ reciept and Quote -----------
 @router.post("/generate-receipt")
 def generate_receipt(req: ReceiptRequest):
+    print("Received company name:", req.company_name) 
     # Ensure pdf_container exists
     output_dir = os.path.join(os.path.dirname(__file__), "..", "pdf_container")
     os.makedirs(output_dir, exist_ok=True)
@@ -649,13 +646,16 @@ def generate_receipt(req: ReceiptRequest):
     if req.down_payment > grand_total:
         return {"error": "Down payment cannot exceed the total product cost."}
 
+    # Use provided company name or fall back to default
+    company_name = req.company_name.strip() if req.company_name and req.company_name.strip() else "Times Stock Aluminum & Glass"
+
     # Create receipt filename
     filename = os.path.join(output_dir, f"receipt_{uuid.uuid4().hex}.pdf")
 
     # Generate PDF
     receipt.generate_unofficial_receipt(
         filename=filename,
-        company_name="Times Stock Aluminum & Glass",
+        company_name=company_name,
         customer_name=req.customer_name,
         address=req.address,
         phone=req.phone,
@@ -674,10 +674,20 @@ def generate_quotation(data: QuotationRequest):
         filename=filename,
         client_name=data.client_name,
         client_address=data.client_address,
-        items_quote=[item.dict() for item in data.items_quote]
+        items_quote=[item.dict() for item in data.items_quote],
+        owner_name=data.owner_name,
+        owner_position=data.owner_position,
+        scope_of_work=data.scope_of_work,
+        terms_of_payment=data.terms_of_payment,
+        warranty=data.warranty,
+        lead_time=data.lead_time,
+        company_name=data.company_name,
+        company_address=data.company_address,
+        company_contact=data.company_contact
     )
 
     return FileResponse(filename, media_type="application/pdf", filename="quotation.pdf")
+
 
 @router.get("/reports/pdf")
 def generate_report_pdf_endpoint(year: int, month: int = None, user: dict = Depends(get_current_user)):
@@ -694,13 +704,13 @@ def generate_report_pdf_endpoint(year: int, month: int = None, user: dict = Depe
 
     # Generate PDF
     filepath = receipt.generate_report_pdf(report_text, turnover_report, stl_report, moving_avg_report,stock_movement_report,products_sold_report, year, month)
-
+        
     return FileResponse(filepath, media_type="application/pdf", filename=filepath.split("/")[-1])
 
 
 # ------------ SETTINGS -------------
 
-@router.post("/settings/add-employees", status_code=201) # DONE
+@router.post("/settings/add-employees", status_code=201) #  
 def api_add_employee(
     payload: EmployeeCreate,
     request: Request
@@ -725,7 +735,6 @@ def api_add_employee(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.put("/settings/{id}/status") # DONE
 def api_update_employee_status(
@@ -777,7 +786,6 @@ def api_change_employee_password(
 
     return result
 
-
 @router.get("/maintenance/preview-delete/{years}")
 def preview_transactions_to_delete(years: int, current_admin = Depends(database.get_current_admin)):
     result = database.delete_old_transactions(years, admin_id=current_admin["id"], dry_run=True)
@@ -791,7 +799,7 @@ def preview_transactions_to_delete(years: int, current_admin = Depends(database.
         return {"message": f"Data still hasn't reached {years} years old", "cutoff_date": result.get("cutoff_date")}
     return result
 
-@router.delete("/maintenance/delete-old-transactions/{years}") # DONE
+@router.delete("/maintenance/delete-old-transactions/{years}") #  
 def perform_delete_old_transactions(years: int, current_admin = Depends(database.get_current_admin)):
     try:
         admin_id = current_admin["id"]

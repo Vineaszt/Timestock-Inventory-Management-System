@@ -2,11 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/reports.css?v=2">
+  <link rel="stylesheet" href="../css/reports.css?v=3">
   <style>
+/* ---------- MOBILE LAYOUT (max-width: 768px) ---------- */
+@media screen and (max-width: 768px) {
+
+  body, .container {
+    padding: 0 1rem;
+  }
+
+  .container {
+    grid-template-columns: 1fr; /* full-width layout */
+    gap: 1rem;
+  }
+
+  main {
+    margin-top: 1rem;
+    padding: 0;
+  }
+
+  /* Header bar adjustments */
+  .header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-right: 0;
+    margin-bottom: 1rem;
+  }
+
+  .top-bar {
+    gap: 0.5rem;
+  }
+
+  /* Form layout stacked */
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .form-group input {
+    width: 100%;
+  }
+
+  .generate-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Reports grid stacked vertically */
+  .reports-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  /* Stats cards 1 per row */
+  .summary-stats, .ma-grid {
+    grid-template-columns: 1fr 1fr; /* two per row, adjust if needed */
+    gap: 10px;
+  }
+
+  /* Table adjustments */
+  .report-table {
+    font-size: 12px;
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .report-table th, .report-table td {
+    padding: 8px 6px;
+    white-space: nowrap;
+  }
+
+  /* Report sections full width */
+  .report-section, .report-form {
+    padding: 15px;
+  }
+
+  /* Interpretation list readability */
+  .interpretation-list h4 {
+    font-size: 13px;
+  }
+
+  .interpretation-list p, 
+  .interpretation-list li {
+    font-size: 12px;
+  }
+
+  /* Empty message & error box */
+  .empty-message, .error {
+    font-size: 13px;
+    padding: 20px;
+  }
+
+  /* Download button full width */
+  .download-btn {
+    width: 100%;
+    padding: 12px 0;
+  }
+    /* Header bar same as other tabs */
+  .header-bar {
+    flex-direction: row;           /* horizontal layout */
+    justify-content: space-between; /* space between greeting and top-bar */
+    align-items: center;           /* vertical alignment */
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0 1rem;               /* similar padding as other tabs */
+  }
+
+  /* Top-bar spacing */
+  .top-bar {
+    gap: 0.5rem;                   /* small gap between elements */
+    flex-wrap: wrap;                /* allow wrapping if needed */
+  }
+}
 
   </style>
 </head>
@@ -18,11 +131,11 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
       <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
-    </div>
 
+    </div>
+    <div class="mobile-menu-btn">
+      <span class="material-symbols-sharp">menu</span>
+    </div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->
@@ -77,7 +190,7 @@
           </div>
           <div class="stat-card">
             <div class="stat-label">Total Revenue</div>
-            <div class="stat-value">₱{{ "{:,.2f}".format(report_text.total_revenue) }}</div>
+            <div class="stat-value">₱{{ "{:,.2f}".format((report_text.total_revenue))}}</div>
           </div>
         </div>
 

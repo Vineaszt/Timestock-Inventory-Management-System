@@ -7,6 +7,7 @@ import pandas as pd
 from plotly.utils import PlotlyJSONEncoder
 import plotly.subplots as sp
 from statsmodels.tsa.seasonal import STL
+from dateutil.relativedelta import relativedelta
 import json
 import os
 
@@ -15,6 +16,7 @@ if not MOTHERDUCK_TOKEN:
     raise RuntimeError("MOTHERDUCK_TOKEN not set")
 
 def get_graph_html(period='month'):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Total Orders
@@ -104,6 +106,7 @@ def generate_chart_report(df):
     """
     
 def get_turnover_combined_graph():
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     df = con.execute("""
@@ -234,6 +237,7 @@ def get_fastest_moving_materials_chart():
     LIMIT 10;
     """
 
+    # with duckdb.connect("backend/db_timestock") as conn:
     with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
@@ -327,6 +331,7 @@ def get_reorder_point_chart(return_df=False):
         ORDER BY reorder_status DESC, item_name;
     """
 
+    # with duckdb.connect("backend/db_timestock") as conn:
     with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
@@ -380,6 +385,7 @@ def get_reorder_point_chart(return_df=False):
 
 
 def get_stl_decomposition_graph():
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Monthly order quantity
@@ -541,106 +547,229 @@ def get_stl_decomposition_report(df, result):
     """
     return report
 
-def generate_recommendations_from_stl(df: pd.DataFrame, result, top_products_df: pd.DataFrame) -> list:
-    recommendations = []
+
+
+def generate_recommendations_from_stl(df: pd.DataFrame, result, top_products_df: pd.DataFrame):
+
+    flat_recs = []
+    grouped = []
 
     trend = result.trend
     seasonal = result.seasonal
     resid = result.resid
 
+    # Basic safety for very small series
+    TREND_THRESHOLD = 0.5
+    n_trend = len(trend)
+    if n_trend >= 3:
+        trend_change = float(trend.iloc[-2] - trend.iloc[-3])
+        recent_trend_points = trend.iloc[-3:]
+        slope = float((recent_trend_points.iloc[-1] - recent_trend_points.iloc[0]) / (len(recent_trend_points) - 1))
+        last_trend_val = float(trend.iloc[-1])
+    elif n_trend == 2:
+        trend_change = float(trend.iloc[-1] - trend.iloc[-2])
+        slope = trend_change
+        last_trend_val = float(trend.iloc[-1])
+    elif n_trend == 1:
+        trend_change = 0.0
+        slope = 0.0
+        last_trend_val = float(trend.iloc[-1])
+    else:
+        trend_change = 0.0
+        slope = 0.0
+        last_trend_val = 0.0
+
     # Use current month (forecasted)
     current_date = df.index[-1]
     current_month_str = current_date.strftime('%B %Y')
 
-    # Forecast trend for current month using last month's slope
-    trend_change = trend.iloc[-2] - trend.iloc[-3]
-    forecast_trend = trend.iloc[-2] + trend_change
-
-    # ✅ Get historical seasonal values for this month (excluding current month)
+    # Seasonal and residual
     seasonal_history = seasonal[
         (seasonal.index.month == current_date.month) &
         (seasonal.index < current_date.replace(day=1))
     ]
-    seasonal_effect = seasonal_history.mean()
+    seasonal_effect = float(seasonal_history.mean()) if not seasonal_history.empty else float('nan')
+    residual_std = float(resid.std())
 
-    # Residual stats (historical)
-    residual_std = resid.std()
-
-    # Get top product from same month last year (or most recent available, excluding current month)
+    # Top product for the current month historically
     past_top_product_row = top_products_df[
         (top_products_df['order_month'].dt.month == current_date.month) &
         (top_products_df['order_month'] < current_date.replace(day=1))
     ].sort_values('order_month', ascending=False).head(1)
-
     top_product = past_top_product_row['top_product'].values[0] if not past_top_product_row.empty else "N/A"
 
-    # 🔍 DEBUG OUTPUT
-    print("===== STL Forecast Debug =====")
-    print(f"Current Month: {current_month_str}")
-    print(f"Last Month Trend Value: {trend.iloc[-2]:.2f}")
-    print(f"Month Before Last Trend Value: {trend.iloc[-3]:.2f}")
-    print(f"Trend Change: {trend_change:.2f}")
-    print(f"Forecasted Trend: {forecast_trend:.2f}")
-    print("\nSeasonality History for this month (excluding current month):")
-    for date, val in seasonal_history.items():
-        print(f"  {date.strftime('%B %Y')}: {val:.2f}")
-    print(f"Average Seasonal Effect: {seasonal_effect:.2f}")
-    print(f"\nResidual STD (historical): {residual_std:.2f}")
-    print(f"Top Product (historical for same month): {top_product}")
-    print("================================\n")
-
-    # Define sensitivity threshold for ignoring small trend changes
-    TREND_THRESHOLD = 0.5  
-
-    # Multi-month slope check 
-    recent_trend_points = trend.iloc[-3:]
-    slope = (recent_trend_points.iloc[-1] - recent_trend_points.iloc[0]) / (len(recent_trend_points) - 1)
-
+    # ---- Build current month recommendations (kept exactly as original style) ----
+    # Full-text (month included) — keep this in flat list for backward compatibility
+    current_month_flat = []
     if trend_change > TREND_THRESHOLD:
-        recommendations.append(
+        current_month_flat.append(
             f"🟢 {current_month_str} Trend Increasing (forecasted): Consider stocking more materials of <strong>{top_product}</strong>."
         )
-
     elif trend_change < -TREND_THRESHOLD:
         if slope < -TREND_THRESHOLD:
-            recommendations.append(
+            current_month_flat.append(
                 f"🔴 {current_month_str} Sustained Trend Decrease (forecasted): Monitor demand and consider reducing stock of <strong>{top_product}</strong>."
             )
         else:
-            recommendations.append(
+            current_month_flat.append(
                 f"🟡 {current_month_str} Minor Decline (forecasted): <strong>{top_product}</strong> still sells well — monitor but don’t reduce stock yet."
             )
-
     else:
-        recommendations.append(
+        current_month_flat.append(
             f"⚪ {current_month_str} Trend Stable (forecasted): No major change in demand for <strong>{top_product}</strong>."
         )
 
+    if seasonal_effect == seasonal_effect:  # not NaN
+        if seasonal_effect > 0:
+            current_month_flat.append(
+                f"🌞 Positive seasonality expected in <strong>{current_date.strftime('%B')}</strong> — anticipate higher demand."
+            )
+        elif seasonal_effect < 0:
+            current_month_flat.append(
+                f"🌧️ Negative seasonality expected in <strong>{current_date.strftime('%B')}</strong> — anticipate lower demand."
+            )
 
-    # Seasonal insight
-    if seasonal_effect > 0:
-        recommendations.append(
-            f"🌞 Positive seasonality expected in <strong>{current_date.strftime('%B')}</strong> — anticipate higher demand."
-        )
-    elif seasonal_effect < 0:
-        recommendations.append(
-            f"🌧️ Negative seasonality expected in <strong>{current_date.strftime('%B')}</strong> — anticipate lower demand."
-        )
-
-    # Residual volatility check (historical)
     if residual_std > 0.2 * df['total_quantity'].mean():
-        recommendations.append(
+        current_month_flat.append(
             "⚠️ High residual variability detected — demand is volatile, consider adding safety stock."
         )
     else:
-        recommendations.append(
+        current_month_flat.append(
             "✅ Residuals show stable behavior — current forecasting approach is reliable."
         )
 
-    return recommendations
+    # Add to flat list and grouped structure (grouped uses shorter messages without repeating month)
+    flat_recs.extend(current_month_flat)
+
+    current_month_grouped = []
+    # Short / grouped versions (no month prefix — month shown as header instead)
+    # replicate same logic but omit month in text
+    if trend_change > TREND_THRESHOLD:
+        current_month_grouped.append(
+            f"🟢 Trend Increasing (forecasted): Consider stocking more materials of <strong>{top_product}</strong>."
+        )
+    elif trend_change < -TREND_THRESHOLD:
+        if slope < -TREND_THRESHOLD:
+            current_month_grouped.append(
+                f"🔴 Sustained Trend Decrease (forecasted): Monitor demand and consider reducing stock of <strong>{top_product}</strong>."
+            )
+        else:
+            current_month_grouped.append(
+                f"🟡 Minor Decline (forecasted): <strong>{top_product}</strong> still sells well — monitor but don’t reduce stock yet."
+            )
+    else:
+        current_month_grouped.append(
+            f"⚪ Trend Stable (forecasted): No major change in demand for <strong>{top_product}</strong>."
+        )
+
+    if seasonal_effect == seasonal_effect:
+        if seasonal_effect > 0:
+            current_month_grouped.append("🌞 Positive seasonality expected — anticipate higher demand.")
+        elif seasonal_effect < 0:
+            current_month_grouped.append("🌧️ Negative seasonality expected — anticipate lower demand.")
+
+    if residual_std > 0.2 * df['total_quantity'].mean():
+        current_month_grouped.append("⚠️ High residual variability detected — consider adding safety stock.")
+    else:
+        current_month_grouped.append("✅ Residuals show stable behavior — forecasting appears reliable.")
+
+    grouped.append({
+        'month': current_month_str,
+        'recs': current_month_grouped
+    })
+
+    # ---- Next 3 months (forecast) ----
+    for i in range(1, 4):
+        forecast_date = current_date + relativedelta(months=i)
+        forecast_month_str = forecast_date.strftime('%B %Y')
+
+        # simple trend continuation using slope
+        forecast_trend_val = last_trend_val + (slope * i)
+
+        # seasonal history for that month
+        seasonal_history_future = seasonal[
+            (seasonal.index.month == forecast_date.month) &
+            (seasonal.index < forecast_date.replace(day=1))
+        ]
+        seasonal_effect_future = float(seasonal_history_future.mean()) if not seasonal_history_future.empty else float('nan')
+
+        # top product historically for this forecast month
+        past_top_product_row = top_products_df[
+            (top_products_df['order_month'].dt.month == forecast_date.month) &
+            (top_products_df['order_month'] < forecast_date.replace(day=1))
+        ].sort_values('order_month', ascending=False).head(1)
+        top_product_future = past_top_product_row['top_product'].values[0] if not past_top_product_row.empty else "N/A"
+
+        # Build flat messages (month included) — same style as original
+        if slope > TREND_THRESHOLD:
+            flat_recs.append(
+                f"🟢 {forecast_month_str} Trend Increasing (forecasted): Consider stocking more materials of <strong>{top_product_future}</strong>."
+            )
+        elif slope < -TREND_THRESHOLD:
+            flat_recs.append(
+                f"🔴 {forecast_month_str} Sustained Trend Decrease (forecasted): Monitor demand and consider reducing stock of <strong>{top_product_future}</strong>."
+            )
+        else:
+            flat_recs.append(
+                f"⚪ {forecast_month_str} Trend Stable (forecasted): No major change in demand for <strong>{top_product_future}</strong>."
+            )
+
+        if seasonal_effect_future == seasonal_effect_future:
+            if seasonal_effect_future > 0:
+                flat_recs.append(
+                    f"🌞 Positive seasonality expected in <strong>{forecast_date.strftime('%B')}</strong> — anticipate higher demand."
+                )
+            elif seasonal_effect_future < 0:
+                flat_recs.append(
+                    f"🌧️ Negative seasonality expected in <strong>{forecast_date.strftime('%B')}</strong> — anticipate lower demand."
+                )
+
+        if residual_std > 0.2 * df['total_quantity'].mean():
+            flat_recs.append(
+                f"⚠️ {forecast_month_str}: High residual variability detected — demand is volatile, consider adding safety stock."
+            )
+        else:
+            flat_recs.append(
+                f"✅ {forecast_month_str}: Residuals show stable behavior — current forecasting approach is reliable."
+            )
+
+        # Build grouped/short messages (no month prefix)
+        grouped_msgs = []
+        if slope > TREND_THRESHOLD:
+            grouped_msgs.append(
+                f"🟢 Trend Increasing (forecasted): Consider stocking more materials of <strong>{top_product_future}</strong>."
+            )
+        elif slope < -TREND_THRESHOLD:
+            grouped_msgs.append(
+                f"🔴 Sustained Trend Decrease (forecasted): Monitor demand and consider reducing stock of <strong>{top_product_future}</strong>."
+            )
+        else:
+            grouped_msgs.append(
+                f"⚪ Trend Stable (forecasted): No major change in demand for <strong>{top_product_future}</strong>."
+            )
+
+        if seasonal_effect_future == seasonal_effect_future:
+            if seasonal_effect_future > 0:
+                grouped_msgs.append("🌞 Positive seasonality expected — anticipate higher demand.")
+            elif seasonal_effect_future < 0:
+                grouped_msgs.append("🌧️ Negative seasonality expected — anticipate lower demand.")
+
+        if residual_std > 0.2 * df['total_quantity'].mean():
+            grouped_msgs.append("⚠️ High residual variability detected — consider adding safety stock.")
+        else:
+            grouped_msgs.append("✅ Residuals show stable behavior — forecasting appears reliable.")
+
+        grouped.append({
+            'month': forecast_month_str,
+            'recs': grouped_msgs
+        })
+
+    # Return both flat and grouped
+    return flat_recs, grouped
 
 
 def get_sales_moving_average_chart():
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Total monthly sales
@@ -836,6 +965,7 @@ def generate_sales_moving_average_report(df: pd.DataFrame) -> str:
 
 # ------------ Reports -----------
 def get_text_report_for_month(year: int, month: int):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
@@ -855,27 +985,36 @@ def get_text_report_for_month(year: int, month: int):
         AND EXTRACT(MONTH FROM ot.date_created) = {month}
         GROUP BY period
         ORDER BY period;
-
     """
 
     df = con.execute(query).fetchdf()
 
+    #Always return a dict
     if df.empty:
-        return f"No records found for {year}-{month:02d}"
+        return {
+            "empty": True,
+            "message": f"No sales records found for {year}-{month:02d}.",
+            "title": f"Report for {pd.Timestamp(year=year, month=month, day=1).strftime('%B %Y')}",
+            "total_orders": 0,
+            "total_sales": 0,
+            "total_revenue": 0.0,
+            "breakdown": []
+        }
 
     # Monthly totals
     total_orders = int(df["total_orders"].sum())
     total_sales = int(df["total_sales"].sum())
     total_revenue = float(df["total_revenue"].sum())
 
-    breakdown = []
-    for _, row in df.iterrows():
-        breakdown.append({
+    breakdown = [
+        {
             "day": row['period'].strftime("%Y-%m-%d"),
             "orders": int(row['total_orders']),
             "sales": int(row['total_sales']),
             "revenue": float(row['total_revenue'])
-        })
+        }
+        for _, row in df.iterrows()
+    ]
 
     return {
         "empty": False,
@@ -887,6 +1026,7 @@ def get_text_report_for_month(year: int, month: int):
     }
 
 def get_turnover_text_report_for_month(year: int, month: int):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
@@ -951,6 +1091,7 @@ def get_turnover_text_report_for_month(year: int, month: int):
     }
 
 def get_stl_text_report_for_month(year: int, month: int):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Monthly order quantity
@@ -1041,6 +1182,7 @@ def get_stl_text_report_for_month(year: int, month: int):
     }
 
 def get_sales_moving_average_text_report(year: int, month: int | None = None):
+    # with duckdb.connect('backend/db_timestock') as con:
     with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as con:
         # --- get full dataset (no filtering here) ---
         df = con.execute("""
@@ -1118,6 +1260,7 @@ def get_sales_moving_average_text_report(year: int, month: int | None = None):
         }
 
 def get_stock_movement_report_for_month(year: int, month: int):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
@@ -1167,6 +1310,7 @@ def get_stock_movement_report_for_month(year: int, month: int):
     }
 
 def get_products_sold_for_month(year: int, month: int):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""

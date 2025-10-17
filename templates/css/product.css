@@ -43,7 +43,7 @@ html {
 
 body {
     width: 100vw;
-    height: 100vh;
+    height: auto;
     font-family: Poppins, sans-serif;
     font-size: 0.88rem;
     background: var(--color-background);
@@ -56,7 +56,7 @@ body {
     display: grid;
     width: 100%;
     gap: 1.8rem;
-    grid-template-columns: 14rem auto;
+    grid-template-columns: 5rem auto;
     padding: 0 1.5rem;
 }
 
@@ -974,15 +974,7 @@ background: #545b62;
   }
 }
 .table-scroll {
-  height: calc(100vh - (65px + 90px)); /* header + filters */
-  width: 100%;
-  overflow-y: auto;
-}
-
-#unavailableSection {
-  height: calc(100vh - (65px + 90px)); /* header + filters */
-  width: 100%;
-  overflow-y: auto;
+  max-height: calc(100vh - 150px);
 }
 
 #productTable {

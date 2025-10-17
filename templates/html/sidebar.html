@@ -30,106 +30,254 @@
 
 <style>
 aside {
-    height: 100vh;
-    position: sticky;   
-
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  left: 0;
+  transition: width 0.3s ease;
+  width: 5rem; /* collapsed width */
+  overflow: hidden;
+  background: white;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  border-right: 0 solid transparent;
 }
 
+  
+/* Expand sidebar on hover */
+aside:hover {
+  width: 14rem;
+  border-right: 4px solid var(--color-primary);
+}
+
+/* --- TOP SECTION (Logo + Title) --- */
 aside .top {
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 1.4rem;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem;
+  gap: 1.5rem;
+  transition: all 0.3s ease;
+  overflow: visible; /* ensure logo isn't hidden */
 }
 
 aside .logo {
-    display: flex;
-    gap: 0.8rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 aside .logo img {
-    width: 4rem;
-    height: 4rem;
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  display: block;
+  transition: all 0.3s ease;
 }
 
-aside .close {
-    display: none;
+/* --- Hide title when collapsed --- */
+aside h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-dark);
+  opacity: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
 }
 
+aside:hover h2 {
+  opacity: 1;
+}
+
+aside h2 .danger {
+  color: var(--color-danger);
+}
+
+/* --- Sidebar Links --- */
 aside .sidebar {
-    background: white;
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;   /* fill parent height */
-    position: relative;
-    top: 0;             /* remove the 3rem offset */
-
-}
-
-aside h3 {
-    font-weight: 500;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
+  padding-top: 1rem;
+  transition: all 0.3s ease;
 }
 
 aside .sidebar a {
-    display: flex;
-    color: var(--color-info-dark);
-    margin-left: 2rem;
-    gap: 1rem;
-    align-items: center;
-    position: relative;
-    height: 3.7rem;
-    transition: all 300ms ease;
+  display: flex;
+  align-items: center;
+  color: var(--color-info-dark);
+  gap: 1rem;
+  position: relative;
+  height: 3.7rem;
+  padding-left: 1.2rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 aside .sidebar a span {
-    font-size: 1.6rem;
-    transition: all 300ms ease;
+  font-size: 1.8rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+aside .sidebar a h3 {
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show text on hover */
+aside:hover .sidebar a h3 {
+  opacity: 1;
 }
 
 aside .sidebar a:last-child {
-    position: absolute;
-    bottom: 2rem;
-    width: 100%;
+  position: absolute;
+  bottom: 2rem;
+  width: 100%;
 }
 
+/* Active and hover states */
 aside .sidebar a.active {
-    background: var(--color-light);
-    color: var(--color-primary);
-    margin-left: 0;
+  background: var(--color-light);
+  color: var(--color-primary);
 }
 
-aside .sidebar a.active:before {
-    content: "";
-    width: 6px;
-    height: 100%;
-    background: var(--color-primary);
+aside .sidebar a.active::before {
+  content: "";
+  width: 6px;
+  height: 100%;
+  background: var(--color-primary);
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 aside .sidebar a.active span {
-    color: var(--color-primary);
-    margin-left: calc(1rem - 3px);
+  color: var(--color-primary);
 }
 
 aside .sidebar a:hover {
-    color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-light);
 }
 
-aside .sidebar a:hover span {
-    margin-left: 1rem;
+/* ===================== MOBILE LAYOUT ===================== */
+@media (max-width: 768px) {
+  /* Sidebar slides in (hidden by default) */
+  aside {
+    position: fixed;
+    top: 0;
+    left: -15rem; /* Hidden off-screen */
+    width: 14rem;
+    height: 100%;
+    transition: left 0.3s ease;
+    border-right: 4px solid var(--color-primary);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: 250;
+    background: white;
+  }
+
+  aside.active {
+    left: 0;
+  }
+
+  /* Sidebar link labels always visible in mobile */
+  aside .sidebar a h3 {
+    opacity: 1;
+  }
+
+  /* Burger Button (only visible on mobile) */
+  .mobile-menu-btn {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    z-index: 300;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.3s ease;
+  }
+
+  /* Move burger button slightly when sidebar is open */
+  aside.active ~ .mobile-menu-btn {
+    left: 15rem; /* same as sidebar width */
+  }
+
+  .mobile-menu-btn span {
+    font-size: 2rem;
+    color: var(--color-primary);
+  }
+
+  /* Overlay (darkens background when sidebar is open) */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    display: none;
+  }
+
+  .overlay.active {
+    display: block;
+  }
+
+  /* Disable hover expand behavior on mobile */
+  aside:hover {
+    width: 14rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-btn,
+  .overlay {
+    display: none !important;
+  }
 }
 </style>
 
-<script>
-      // Highlight the current tab
-  document.addEventListener("DOMContentLoaded", function () {
-    const currentPage = window.location.pathname.split("/").pop(); 
-    const menuLinks = document.querySelectorAll(".sidebar a");
 
-    menuLinks.forEach(link => {
-      if (link.getAttribute("href") === currentPage) {
-        link.classList.add("active");
-      }
-    });
+
+<script>
+  // Highlight the current tab
+  document.addEventListener("DOMContentLoaded", function () {
+  const currentPage = window.location.pathname.split("/").pop(); 
+  const menuLinks = document.querySelectorAll(".sidebar a");
+
+  // Highlight active link
+  menuLinks.forEach(link => {
+    if (link.getAttribute("href") === currentPage) {
+      link.classList.add("active");
+    }
   });
+
+  // MOBILE MENU TOGGLE
+  const mobileBtn = document.querySelector(".mobile-menu-btn");
+  const sidebar = document.querySelector("aside");
+  const overlay = document.querySelector(".overlay");
+
+  function toggleSidebar() {
+    sidebar.classList.toggle("active");
+    overlay.classList.toggle("active");
+  }
+
+  if (mobileBtn) {
+    mobileBtn.addEventListener("click", toggleSidebar);
+  }
+
+  if (overlay) {
+    overlay.addEventListener("click", toggleSidebar);
+  }
+});
 </script>

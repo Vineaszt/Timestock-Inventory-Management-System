@@ -7,6 +7,7 @@ if not MOTHERDUCK_TOKEN:
     raise RuntimeError("MOTHERDUCK_TOKEN not set")
 
 con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+# con = duckdb.connect('backend/db_timestock')
 
 # Alerts
 def get_minimum_stock_alerts():
@@ -19,6 +20,7 @@ def get_minimum_stock_alerts():
         JOIN items i ON m.item_id = i.id
     """
 
+    # with duckdb.connect("backend/db_timestock") as conn:
     with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
@@ -121,7 +123,8 @@ def get_total_revenue() -> float:
     return con.execute("SELECT SUM(total_amount) FROM order_transactions").fetchone()[0] or 0.0
 
 def get_all_time_metrics(): 
-    duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+    # con = duckdb.connect("backend/db_timestock")
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = """
     SELECT 
@@ -178,6 +181,7 @@ def get_fast_moving_ratings_map():
     WHERE ot.date_created >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL 3 MONTH)
     GROUP BY i.item_name
     """
+    # with duckdb.connect("backend/db_timestock") as conn:
     with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
     
@@ -240,6 +244,7 @@ def get_product_usage_summary():
 
 
 def get_stock_summary():
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = """
@@ -290,6 +295,7 @@ def get_stock_summary():
 
 # Orders
 def get_summary_cards(period: str):
+    # con = duckdb.connect('backend/db_timestock')
     con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     if period not in ('week', 'month', 'year'):

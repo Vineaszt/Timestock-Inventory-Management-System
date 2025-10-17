@@ -87,9 +87,10 @@ def analytics_page(request: Request, user: dict = Depends(get_current_user)):
     turnover_combined_html, _, summary_html = graphs.get_turnover_combined_graph()
 
     # STL Decomposition
+
     stl_html, _, df, result, top_products_df = graphs.get_stl_decomposition_graph()
     stl_report = graphs.get_stl_decomposition_report(df, result)
-    stl_recommendation = graphs.generate_recommendations_from_stl(df, result, top_products_df)
+    stl_recommendation_flat, stl_recommendation_grouped = graphs.generate_recommendations_from_stl(df, result, top_products_df)
 
     # Moving Average Chart & Recommendations
     ma_chart_html, ma_df = graphs.get_sales_moving_average_chart()
@@ -105,7 +106,8 @@ def analytics_page(request: Request, user: dict = Depends(get_current_user)):
         "summary": summary_html,
         "stl_html": stl_html,
         "stl_report": stl_report,
-        "stl_recommendation": stl_recommendation,
+        "stl_recommendation": stl_recommendation_flat,       
+        "stl_recommendation_grouped": stl_recommendation_grouped,  
         "ma_chart_html": ma_chart_html,
         "ma_report": ma_report,
         "ma_recommendation": ma_recommendation
