@@ -135,10 +135,8 @@ def get_all_time_metrics():
     LEFT JOIN order_items oi ON ot.id = oi.order_id
     WHERE ot.status_id = 'OS005'
     """
-
-    result = con.execute(query).fetchone()
-
-    con.close()
+    with duckdb.connect('md:mdb_timestock', config={'motherduck_token': MOTHERDUCK_TOKEN}) as conn:
+        result = con.execute(query).fetchone()
 
     return {
         "total_orders": result[0],
@@ -284,9 +282,8 @@ def get_stock_summary():
             (SELECT contact_name FROM supplier_totals) AS top_supplier,
             (SELECT total_supplied FROM supplier_totals) AS top_supplier_total
     """
-
-    result = con.execute(query).fetchone()
-    con.close()
+    with duckdb.connect('md:mdb_timestock', config={'motherduck_token': MOTHERDUCK_TOKEN}) as conn:
+        result = con.execute(query).fetchone()
 
     return {
         "stock_in": result[0],
