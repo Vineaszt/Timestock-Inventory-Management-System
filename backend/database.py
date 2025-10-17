@@ -7,7 +7,6 @@ from argon2.exceptions import VerifyMismatchError
 from typing import List, Dict, Any, Optional
 import os
 
-
 MOTHERDUCK_TOKEN = os.getenv("MOTHERDUCK_TOKEN")
 if not MOTHERDUCK_TOKEN:
     raise RuntimeError("MOTHERDUCK_TOKEN not set")
@@ -2407,7 +2406,7 @@ def get_user_by_email(email: str):
     # Check admin
     admin_query = """
         SELECT id, firstname, lastname, email, password, 'admin' AS role
-        FROM admin
+        FROM main.admin
         WHERE email = ?
         LIMIT 1
     """
@@ -2421,7 +2420,7 @@ def get_user_by_email(email: str):
     employee_query = """
         SELECT id, firstname, lastname, email, password, 'employee' AS role,
                contact_number, is_active
-        FROM employees
+        FROM main.employees
         WHERE email = ?
         LIMIT 1
     """
