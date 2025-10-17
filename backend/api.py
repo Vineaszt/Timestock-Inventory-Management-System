@@ -17,7 +17,7 @@ from .app_schemas import (
     SupplierCreate, SupplierUpdate, ProductMaterialCreate, OrderTransactionCreate
 )
 
-from backend import database, reciept, graphs, analytics
+from backend import database, receipt, graphs, analytics
 router = APIRouter()
 
 
@@ -642,7 +642,7 @@ def generate_receipt(req: ReceiptRequest):
     os.makedirs(output_dir, exist_ok=True)
 
     # Clean old files
-    reciept.cleanup_old_pdfs(output_dir, max_age_minutes=10)
+    receipt.cleanup_old_pdfs(output_dir, max_age_minutes=10)
 
     # Validate down payment
     grand_total = sum(item.quantity * item.unit_price for item in req.items)
@@ -653,7 +653,7 @@ def generate_receipt(req: ReceiptRequest):
     filename = os.path.join(output_dir, f"receipt_{uuid.uuid4().hex}.pdf")
 
     # Generate PDF
-    reciept.generate_unofficial_receipt(
+    receipt.generate_unofficial_receipt(
         filename=filename,
         company_name="Times Stock Aluminum & Glass",
         customer_name=req.customer_name,
@@ -670,7 +670,7 @@ def generate_quotation(data: QuotationRequest):
     temp_file = NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
 
-    reciept.generate_modern_quotation_pdf(
+    receipt.generate_modern_quotation_pdf(
         filename=filename,
         client_name=data.client_name,
         client_address=data.client_address,
@@ -693,7 +693,7 @@ def generate_report_pdf_endpoint(year: int, month: int = None, user: dict = Depe
     products_sold_report = graphs.get_products_sold_for_month(year, month)
 
     # Generate PDF
-    filepath = reciept.generate_report_pdf(report_text, turnover_report, stl_report, moving_avg_report,stock_movement_report,products_sold_report, year, month)
+    filepath = receipt.generate_report_pdf(report_text, turnover_report, stl_report, moving_avg_report,stock_movement_report,products_sold_report, year, month)
 
     return FileResponse(filepath, media_type="application/pdf", filename=filepath.split("/")[-1])
 
