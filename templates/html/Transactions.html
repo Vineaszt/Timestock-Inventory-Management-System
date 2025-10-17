@@ -2,11 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Transactions.css?v=7">
+  <link rel="stylesheet" href="../css/Transactions.css?v=8">
   <style>
+/* ================= MOBILE LAYOUT ================= */
+@media screen and (max-width: 768px) {
+
+  /* Container stack */
+  .container {
+    grid-template-columns: 1fr; /* collapse sidebar */
+    padding: 0 1rem;
+  }
+
+  main {
+    padding: 1rem 0;
+  }
+
+  /* Header-bar fix for mobile */
+  .header-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  .top-bar {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  #greeting {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .profile-photo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Filters stack vertically */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-left,
+  .filter-right {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .date-filter-group {
+    flex-direction: column;
+    margin-right: 0;
+  }
+
+  /* Tables scrollable horizontally */
+  .table-container,
+  .productionTableContainer,
+  .orderTableContainer {
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  table {
+    min-width: 600px; /* ensures horizontal scroll if table is wider */
+  }
+
+  th,
+  td {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Tabs stack vertically if needed */
+  .tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto; /* shrink-to-fit for scrolling */
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .tab-content {
+    padding: 10px;
+  }
+
+  /* Buttons touch-friendly */
+  .actions button,
+  .update-btn,
+  .btn-cancel,
+  .btn-submit,
+  .clear-filters-btn {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+  }
+
+  /* Pagination adjust */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .pagination button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* Floating bubble/modal adjustments */
+  .modal-overlay {
+    width: 90%;
+    max-width: 280px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+  }
+
+  /* Keep inputs readable on mobile */
+  .filters input,
+  .filters select {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  #orderMinPrice,#productionMinPrice,
+  #orderMaxPrice,#productionMaxPrice {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+}
 
   </style>
 </head>
@@ -18,17 +155,17 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
         <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
-    </div>
 
+    </div>
+    <div class="mobile-menu-btn">
+      <span class="material-symbols-sharp">menu</span>
+    </div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->
 <main>
   <div class="header-bar">
-  <h1>Transaction and Order Stocks Management</h1>
+  <h1>Transaction Management</h1>
   <div class="top-bar">
         {% include 'alert.html' %}
         {% include "profile.html" %}
@@ -308,28 +445,49 @@ function validateAndFilter(tableId) {
 }
 
 function filterDropdown(tableId, columnIndex, value) {
-  value = value.toLowerCase();
+  value = value.toLowerCase(); // normalize casing
 
-  const filterData = (data, statusKey) => {
-    return value
-      ? data.filter(row => String(row[statusKey] || "").toLowerCase() === value)
-      : [...data];
+  const filterDataByKey = (data, key) => {
+    // if no value (All Types), return everything
+    if (!value) return [...data];
+    return data.filter(row => String(row[key] || "").toLowerCase() === value);
   };
 
   if (tableId === "stockTable") {
-    stockFilteredData = filterData(stockData, "type_code");
+    // Always start from full data for type change
+    stockFilteredData = filterDataByKey(stockData, "type_code");
+
+    // Check if date filters are active, and apply them *after* type filter
+    const startInput = document.getElementById("stockStartDate");
+    const endInput = document.getElementById("stockEndDate");
+    const startDate = startInput?.value || "";
+    const endDate = endInput?.value || "";
+
+    if (startDate || endDate) {
+      stockFilteredData = stockFilteredData.filter(row => {
+        const rowDate = new Date(row.date_created).toISOString().split("T")[0];
+        if (startDate && rowDate < startDate) return false;
+        if (endDate && rowDate > endDate) return false;
+        return true;
+      });
+    }
+
     stockCurrentPage = 1;
     renderStockTable(stockCurrentPage);
   }
 
   if (tableId === "orderTable") {
-    orderFilteredData = filterData(orderData, "status_code");
+    orderFilteredData = value
+      ? orderData.filter(row => String(row.status_code || "").toLowerCase() === value)
+      : [...orderData];
     orderCurrentPage = 1;
     renderOrderTable(orderCurrentPage);
   }
 
   if (tableId === "productionTable") {
-    productionFilteredData = filterData(productionData, "status_code");
+    productionFilteredData = value
+      ? productionData.filter(row => String(row.status_code || "").toLowerCase() === value)
+      : [...productionData];
     productionCurrentPage = 1;
     renderProductionTable(productionCurrentPage);
   }
@@ -355,9 +513,11 @@ function filterDateAndPriceRange(tableId, startDate, endDate, minPrice, maxPrice
   };
 
   if (tableId === "stockTable") {
-    stockFilteredData = filterData(stockData);
+    const baseData = stockFilteredData.length ? stockFilteredData : stockData;
+    stockFilteredData = filterData(baseData);
     renderStockTable(stockCurrentPage = 1);
   }
+
   if (tableId === "orderTable") {
     orderFilteredData = filterData(orderData);
     renderOrderTable(orderCurrentPage = 1);
@@ -423,7 +583,7 @@ let productionData = [];
 let productionFilteredData = [];
 let productionCurrentPage = 1;
 
-const rowsPerPage = 5; // ✅ single source of truth
+const rowsPerPage = 5; //single source of truth
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchStockTransactions();
@@ -489,7 +649,7 @@ function renderStockTable(page = 1) {
   const pageLabel = document.getElementById("stockPageNumber");
   if (pageLabel) pageLabel.textContent = `Page ${stockCurrentPage}`;
 
-  // ✅ Always refresh pagination
+  // Always refresh pagination
   renderPagination("stock", stockCurrentPage, stockFilteredData.length);
 }
 
@@ -554,7 +714,7 @@ function renderProductionTable(page = 1) {
   const pageLabel = document.getElementById("productionPageNumber");
   if (pageLabel) pageLabel.textContent = `Page ${productionCurrentPage}`;
 
-  // ✅ Pagination refresh
+  //Pagination refresh
   renderPagination("production", productionCurrentPage, productionFilteredData.length);
 }
 
@@ -590,7 +750,7 @@ function renderOrderTable(page = 1) {
   const pageLabel = document.getElementById("orderPageNumber");
   if (pageLabel) pageLabel.textContent = `Page ${orderCurrentPage}`;
 
-  // ✅ Pagination refresh
+  //Pagination refresh
   renderPagination("order", orderCurrentPage, orderFilteredData.length);
 }
 

@@ -2,11 +2,138 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Supplier.css?v=5">
+  <link rel="stylesheet" href="../css/Supplier.css?v=6">
 <style>
+/* ================= MOBILE LAYOUT ================= */
+@media screen and (max-width: 768px) {
+
+  /* Container stack */
+  .container {
+    grid-template-columns: 1fr; /* collapse sidebar */
+    padding: 0 1rem;
+  }
+
+  main {
+    padding: 1rem 0;
+  }
+
+  /* Header-bar fix for mobile */
+  .header-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  .top-bar {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  #greeting {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .profile-photo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Filters stack vertically */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .filter-left,
+  .filter-right,
+  .filter-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .range-group .range-inputs {
+    flex-direction: column;
+  }
+
+  .range-group input {
+    width: 100%;
+  }
+
+  .clear-filters-btn {
+    width: 100%;
+    margin-top: 8px;
+    align-self: stretch;
+  }
+
+  /* Tables horizontally scrollable */
+  .table-container,
+  #supplierTable {
+    overflow-x: auto;
+  }
+
+  #supplierTable {
+    min-width: 600px; /* ensures horizontal scroll if table is wide */
+  }
+
+  #supplierTable th,
+  #supplierTable td {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Summary Cards stack */
+  #summary-cards,
+  #supplier-summary-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Pagination adjust */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .pagination button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* Floating modal/bubble adjustments */
+  .modal-overlay {
+    width: 90%;
+    max-width: 280px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+  }
+
+  /* Make inputs full width */
+  .filters input,
+  .filters select,
+  #searchInput {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Adjust inline-pair for mobile */
+  .inline-pair {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+}
 
 </style>
 </head>
@@ -18,11 +145,10 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
         <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
     </div>
-
+    <div class="mobile-menu-btn">
+      <span class="material-symbols-sharp">menu</span>
+    </div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->
