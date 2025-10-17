@@ -2,329 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Settings.css?v=4">
+  <link rel="stylesheet" href="../css/Settings.css?v=6">
   <style>
-:root {
-    --border-radius-1: 4px;
-    --border-radius-2: 8px;
-    --box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
+  @media screen and (max-width: 768px) {
 
-  .modal {
-      display: none;
-      position: fixed;
-      z-index: 10000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.4);
+  /* Container collapse */
+  .container {
+    grid-template-columns: 1fr; /* hide sidebar, full width */
+    padding: 0 1rem;
   }
 
-  .modal-content {
-      background: #fff;
-      margin: 15% auto;
-      padding: 20px;
-      border-radius: var(--border-radius-2);
-      width: 90%;
-      max-width: 500px;
-      box-shadow: var(--box-shadow);
-      position: relative;
+  /* Header adjustments */
+  .header-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    margin-bottom: 1rem;
   }
 
-.modal-content h3 {
-    margin: 0 0 15px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-}
-
-.modal-content p {
-    margin: 0 0 15px 0;
-    font-size: 14px;
-    color: #555;
-    line-height: 1.5;
-}
-
-.modal-content ul {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: var(--border-radius-1);
-    border-left: 4px solid #dc3545;
-    margin: 0;
-    list-style: none;
-}
-
-.modal-content ul li {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-content ul li:last-child {
-    margin-bottom: 0;
-}
-
-.modal-content ul li strong {
-    color: #dc3545;
-    font-weight: 600;
-}
-
-.muted {
-    color: #6c757d !important;
-    font-size: 13px;
-    font-style: italic;
-}
-
-.btn {
-    padding: 10px 20px;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #fff;
-    color: #333;
-}
-
-.btn:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-    border-color: #dc3545;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-    border-color: #bd2130;
-}
-
-/* Demo styles */
-.demo-container {
-    padding: 40px 20px;
-    text-align: center;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.demo-btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    font-weight: bold;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-1);
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
-}
-
-.demo-btn:hover {
-    background: #0056b3;
-}
-
-@media (max-width: 480px) {
-    .modal-content {
-        margin: 10% auto;
-        max-width: 95%;
-        padding: 15px;
-    }
-
-    .modal-content div[style*="display:flex"] {
-        flex-direction: column-reverse !important;
-    }
-
-    .btn {
-        width: 100%;
-        margin-bottom: 8px;
-    }
-}
-
-.modal-header {
-    padding: 20px 20px 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 20px;
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-}
-
-.close {
-    font-size: 24px;
-    color: #999;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    background: none;
-    border: none;
-}
-
-.close:hover {
-    color: #333;
-}
-
-.modal-body {
-    padding: 0 20px 20px 20px;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group.full-width {
-    grid-column: 1 / -1;
-}
-
-.form-group label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #555;
-    margin-bottom: 5px;
-}
-
-.modal-content input,
-.modal-content select {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    transition: border-color 0.2s;
-}
-
-.modal-content input:focus,
-.modal-content select:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-}
-
-.modal-actions {
-    padding: 15px 20px 20px 20px;
-    border-top: 1px solid #f0f0f0;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-}
-
-.modal-actions button[type="submit"],
-.modal-actions button {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.modal-actions button[type="submit"]:hover,
-.modal-actions button:hover {
-    background: #0056b3;
-}
-
-/* Migration modal specific styling */
-.migration-info {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: var(--border-radius-1);
-    border-left: 4px solid #007bff;
-    margin-bottom: 20px;
-}
-
-.migration-info p {
-    margin: 0;
-    font-size: 14px;
-    color: #666;
-}
-
-#migrateBtn {
-    background: #cbe3d1;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    width: 100%;
-}
-
-#migrateBtn:hover {
-    background: #1e7e34;
-}
-
-@media (max-width: 480px) {
-    .modal-content {
-        margin: 10% auto;
-        max-width: 95%;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .modal-actions {
-        flex-direction: column-reverse;
-    }
-}
-
-/* Demo button for testing */
-.demo-buttons {
-    padding: 20px;
-    text-align: center;
-    display: flex;
+  .top-bar {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 0.5rem;
+  }
+
+  /* Main content vertical stack */
+  main {
+    margin-top: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  /* Maintenance card stack */
+  .maintenance-card {
+    padding: 0.8rem;
+  }
+
+  .maintenance-row {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .maintenance-row input[type="number"] {
+    width: 100%;
+  }
+
+  /* Tables scroll horizontally */
+  .table-wrapper,
+  .table-container,
+  #auditTable {
+    overflow-x: auto;
+  }
+
+  #auditTable thead, 
+  #auditTable tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  #auditTable tbody {
+    display: block;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  #auditTable tbody td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Pagination wraps */
+  .pagination {
+    flex-wrap: wrap;
     justify-content: center;
+    gap: 6px;
+  }
+
+  .pagination button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* Modal full width */
+  .modal-content {
+    width: 95%;
+    max-width: 400px;
+    padding: 1rem;
+  }
+
+  .modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 6px;
+  }
+
+  /* Form grid stacks vertically */
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .modal-content input,
+  .modal-content select {
+    width: 100%;
+  }
+
+  /* Buttons full width for touch targets */
+  .btn,
+  .btn-danger,
+  .demo-btn,
+  #migrateBtn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* Slider adjustments for vertical orientation */
+  .vertical-range {
+    width: 100%; /* full width slider */
+    height: 24px;
+    transform: rotate(0deg); /* horizontal on mobile */
+    margin: 8px 0;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 32px;
+  }
+
+  /* Optional: reduce font sizes for small screens */
+  .modal-content h3 {
+    font-size: 16px;
+  }
+
+  .modal-content p,
+  .modal-content ul li,
+  .muted {
+    font-size: 13px;
+  }
+
+  /* Slider container adjust */
+  .slider-container {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 4px;
+  }
 }
 
-.demo-btn {
-    background: #007bff;
-    color: rgb(255, 255, 255);
-    border: none;
-    font-weight: bold;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-
-    .top h2 {
-  margin: 0;
-  position: relative;
-  left: -20px;  /* adjust this value to move left */
-}
   </style>
 </head>
 <body>
@@ -335,11 +172,11 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
           <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
-    </div>
 
+    </div>
+    <div class="mobile-menu-btn">
+      <span class="material-symbols-sharp">menu</span>
+    </div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->
@@ -358,119 +195,103 @@
         <!-- <button class="demo-btn" onclick="openModal('migrateModal')">Migration</button> -->
     </div>
 
-    <!-- Add Employee Modal -->
-    <div id="addEmployeeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Add Employee</h2>
-                <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
-            </div>
-            <form id="addEmployeeForm">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="firstname">First Name</label>
-                            <input type="text" name="firstname" placeholder="First Name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="lastname">Last Name</label>
-                            <input type="text" name="lastname" placeholder="Last Name" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="email">Email Address</label>
-                            <input type="email" name="email" placeholder="Email" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="password">Password</label>
-                            <input type="password" name="password" placeholder="Password" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="contact_number">Contact Number</label>
-                            <input type="text" name="contact_number" placeholder="Contact Number" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit">Add Employee</button>
-                </div>
-            </form>
+<!-- Add Employee Modal -->
+<div id="addEmployeeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Employee</h2>
+            <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
         </div>
-    </div>
-
-    <!-- Change Employee Status Modal -->
-    <div id="statusModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Change Employee Status</h2>
-                <span class="close" onclick="closeModal('statusModal')">&times;</span>
-            </div>
-            <form id="statusForm">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="employee_id">Employee ID</label>
-                            <input type="text" name="id" placeholder="Employee ID" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="status">Status</label>
-                            <select name="is_active" required>
-                                <option value="" disabled selected>Select Status</option>
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit">Update Status</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Change Employee Password Modal -->
-    <div id="passwordModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Change Employee Password</h2>
-                <span class="close" onclick="closeModal('passwordModal')">&times;</span>
-            </div>
-            <form id="passwordForm">
-                <div class="modal-body">
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label for="target_employee_id">Employee ID</label>
-                            <input type="text" name="target_employee_id" placeholder="Employee ID" required>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="new_password">New Password</label>
-                            <input type="password" name="new_password" placeholder="New Password" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit">Change Password</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Migrate Password Hashes Modal -->
-    <!-- <div id="migrateModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Migrate Password Hashes</h2>
-                <span class="close" onclick="closeModal('migrateModal')">&times;</span>
-            </div>
+        <form id="addEmployeeForm">
             <div class="modal-body">
-                <div class="migration-info">
-                    <p><strong>Warning:</strong> This will update all employee password hashes in the database. This action cannot be undone. Please ensure you have a backup before proceeding.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="firstname">First Name</label>
+                        <input type="text" name="firstname" placeholder="First Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastname">Last Name</label>
+                        <input type="text" name="lastname" placeholder="Last Name" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="email">Email Address</label>
+                        <input type="email" name="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" placeholder="Password" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="contact_number">Contact Number</label>
+                        <input type="text" name="contact_number" placeholder="Contact Number" required>
+                    </div>
                 </div>
-                <button id="migrateBtn">Run Migration</button>
             </div>
+            <div class="modal-actions">
+                <button type="submit">Add Employee</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Employee Status Modal -->
+<div id="statusModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Employee Status</h2>
+            <span class="close" onclick="closeModal('statusModal')">&times;</span>
         </div>
-    </div> -->
-<!-- START OF TESTING HTML -->
+        <form id="statusForm">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="employee_id">Employee ID</label>
+                        <input type="text" name="id" placeholder="Employee ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select name="is_active" required>
+                            <option value="" disabled selected>Select Status</option>
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit">Update Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Employee Password Modal -->
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Employee Password</h2>
+            <span class="close" onclick="closeModal('passwordModal')">&times;</span>
+        </div>
+        <form id="passwordForm">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="target_employee_id">Employee ID</label>
+                        <input type="text" name="target_employee_id" placeholder="Employee ID" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="new_password">New Password</label>
+                        <input type="password" name="new_password" placeholder="New Password" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit">Change Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 
 <section class="maintenance-card" aria-labelledby="maintenance-title">
   <h2 id="maintenance-title">Delete Old Transactions</h2>
@@ -529,37 +350,34 @@
 </div>
 
 <section class="maintenance-card" aria-labelledby="maintenance-title">
-  <h2>Audit Logs</h2>
+  <h2 id="maintenance-title">Audit Logs</h2>
 
-    <div id="controls" style="margin-bottom:12px;">
-      <button id="prevBtn">Prev</button>
-      <span id="pageInfo" style="margin:0 8px">Page 1</span>
-      <button id="nextBtn">Next</button>
+
+  <!-- Table + Slider -->
+  <div class="table-wrapper">
+    <div class="table-container">
+      <table id="auditTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Entity</th>
+            <th>Entity ID</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th>User</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="auditBody"></tbody>
+      </table>
     </div>
 
-    <div class="table-wrapper">
-      <!-- table area + slider side-by-side -->
-      <div class="table-container">
-        <table id="auditTable">
-          <thead>
-            <tr>
-              <th>ID</th><th>Entity</th><th>Entity ID</th><th>Action</th><th>Details</th><th>User</th><th>Time</th>
-            </tr>
-          </thead>
-          <!-- The tbody is wrapped so we can control scrolling height -->
-          <tbody id="auditBody"></tbody>
-        </table>
-      </div>
+  </div>
 
-      <!-- vertical slider to scroll the table body -->
-      <div class="slider-container">
-        <input id="verticalSlider" type="range" min="0" max="100" value="0" orient="vertical">
-      </div>
-    </div>
-
-    <div id="pagination" style="margin-top:12px;"></div>
-  <script src="audit_with_slider.js"></script>
+  <!-- Pagination Buttons (Bottom) -->
+  <div class="pagination" id="pagination"></div>
 </section>
+
 
 <!-- END OF TESTING HTML -->
 
@@ -582,6 +400,7 @@
     dropdownMenu.style.display = dropdownMenu.style.display === "block" ? "none" : "block";
   });
 </script>
+
 
 <script>
 async function postData(url = '', data = {}) {
@@ -826,7 +645,7 @@ document.addEventListener('click', (ev) => {
   }
 });
 
-/* TEST */
+
 
 const API = '/api/audit-logs';
 const PAGE_SIZE = 10;  // 10 rows per page
@@ -834,11 +653,7 @@ let logs = [];         // full dataset loaded from server
 let currentPage = 1;
 
 const auditBody = document.getElementById('auditBody');
-const pageInfo = document.getElementById('pageInfo');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
 const paginationDiv = document.getElementById('pagination');
-const slider = document.getElementById('verticalSlider');
 
 // fetch logs and initialize UI
 async function init() {
@@ -865,21 +680,20 @@ function renderPage(page) {
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageRows = logs.slice(start, start + PAGE_SIZE);
 
-  auditBody.innerHTML = '';
+  auditBody.innerHTML = "";
   if (pageRows.length === 0) {
     auditBody.innerHTML = `<tr><td colspan="7">No audit logs</td></tr>`;
   } else {
-    // create up to PAGE_SIZE rows (the scroll window will show first 5 by default)
     for (const log of pageRows) {
-      const user = log.admin_id || log.employee_id || '';
-      const time = log.action_time || log.timestamp || '';
-      const tr = document.createElement('tr');
+      const user = log.admin_id || log.employee_id || "";
+      const time = log.action_time || log.timestamp || "";
+      const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${log.id ?? ''}</td>
-        <td title="${escapeHtml(log.entity ?? '')}">${log.entity ?? ''}</td>
-        <td title="${escapeHtml(log.entity_id ?? '')}">${log.entity_id ?? ''}</td>
-        <td title="${escapeHtml(log.action ?? '')}">${log.action ?? ''}</td>
-        <td title="${escapeHtml(log.details ?? '')}">${log.details ?? ''}</td>
+        <td>${log.id ?? ""}</td>
+        <td title="${escapeHtml(log.entity ?? "")}">${log.entity ?? ""}</td>
+        <td title="${escapeHtml(log.entity_id ?? "")}">${log.entity_id ?? ""}</td>
+        <td title="${escapeHtml(log.action ?? "")}">${log.action ?? ""}</td>
+        <td title="${escapeHtml(log.details ?? "")}">${log.details ?? ""}</td>
         <td>${user}</td>
         <td>${time}</td>
       `;
@@ -887,61 +701,65 @@ function renderPage(page) {
     }
   }
 
-  // reset scrolling and slider
-  const tbody = auditBody.parentElement; // tbody element (we used #auditBody as the tbody)
-  tbody.scrollTop = 0;
-  slider.value = 0;
-  pageInfo.textContent = `Page ${currentPage} / ${Math.max(1, Math.ceil(logs.length / PAGE_SIZE))}`;
+  // re-render pagination buttons
+  renderPagination();
 
-  // show/hide slider: only needed if pageRows length > 5
-  const showSlider = pageRows.length > 5;
-  document.querySelector('.slider-container').style.display = showSlider ? 'flex' : 'none';
-  updatePageButtons();
 }
+
 
 // pagination UI
 function renderPagination() {
-  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
-  paginationDiv.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.textContent = i;
-    btn.className = (i === currentPage) ? 'active' : '';
-    btn.onclick = () => renderPage(i);
+  const totalPages = Math.ceil(logs.length / PAGE_SIZE);
+  paginationDiv.innerHTML = "";
+
+  // Helper to make a button
+  function createButton(label, page, disabled = false, bold = false) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.disabled = disabled;
+    if (bold) btn.style.fontWeight = "bold";
+    btn.onclick = () => renderPage(page);
     paginationDiv.appendChild(btn);
   }
+
+  // Prev button
+  createButton("Prev", currentPage - 1, currentPage === 1);
+
+  // Determine page numbers to display
+  let pageNumbers = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
+  } else {
+    pageNumbers.push(1);
+    if (currentPage > 4) pageNumbers.push("...");
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) pageNumbers.push(i);
+    if (currentPage < totalPages - 3) pageNumbers.push("...");
+    pageNumbers.push(totalPages);
+  }
+
+  // Render numeric buttons
+  pageNumbers.forEach(num => {
+    if (num === "...") {
+      const span = document.createElement("span");
+      span.textContent = "...";
+      span.style.margin = "0 5px";
+      paginationDiv.appendChild(span);
+    } else {
+      createButton(num, num, num === currentPage, num === currentPage);
+    }
+  });
+
+  // Next button
+  createButton("Next", currentPage + 1, currentPage === totalPages);
+
 }
 
-function updatePageButtons() {
-  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
-  prevBtn.disabled = currentPage <= 1;
-  nextBtn.disabled = currentPage >= totalPages;
-  // refresh page number buttons (simple approach: re-render numbers)
-  renderPagination();
-}
-
-// Prev/Next handlers
-prevBtn.addEventListener('click', () => { renderPage(currentPage - 1); });
-nextBtn.addEventListener('click', () => { renderPage(currentPage + 1); });
 
 // Slider <-> scroll sync
 const tbodyElement = () => auditBody.parentElement; // the actual tbody element (display:block)
 
-slider.addEventListener('input', () => {
-  const tbody = tbodyElement();
-  // slider is 0..100; map percent to scrollTop
-  const pct = Number(slider.value) / 100;
-  const maxScroll = Math.max(0, tbody.scrollHeight - tbody.clientHeight);
-  tbody.scrollTop = Math.round(pct * maxScroll);
-});
-
-// if user scrolls with mouse, update slider position
-auditBody.parentElement?.addEventListener?.('scroll', () => {
-  const tbody = tbodyElement();
-  const maxScroll = Math.max(1, tbody.scrollHeight - tbody.clientHeight);
-  const pct = Math.round((tbody.scrollTop / maxScroll) * 100);
-  slider.value = pct;
-});
 
 // helper
 function escapeHtml(s) {

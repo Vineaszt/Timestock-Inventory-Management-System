@@ -120,11 +120,25 @@ def generate_unofficial_receipt(
     elements.append(Paragraph("Thank you for your business!", center_bold))
 
     doc.build(elements)
-    print(f"✅ Receipt saved to: {filename}")
+    
+    print(f"Receipt saved to: {filename}")
 
 #Quote
-
-def generate_modern_quotation_pdf(filename, client_name, client_address, items_quote):
+def generate_modern_quotation_pdf(
+    filename,
+    client_name,
+    client_address,
+    items_quote,
+    owner_name,
+    owner_position,
+    scope_of_work,
+    terms_of_payment,
+    warranty,
+    lead_time,
+    company_name="Times Stock Aluminum & Glass Services",
+    company_address=None,
+    company_contact=None
+):
     styles = getSampleStyleSheet()
     normal = styles['Normal']
     bold = ParagraphStyle(name="Bold", parent=normal, fontName="Helvetica-Bold", fontSize=10)
@@ -136,21 +150,27 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
 
     elements = []
 
-    # Company Header
-    elements.append(Paragraph("Times Stock Aluminum & Glass Services", company))
-    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(company_name, company))
     elements.append(Paragraph("QUOTATION", title))
     elements.append(Spacer(1, 6))
     elements.append(HRFlowable(width="100%", color=colors.HexColor("#005691"), thickness=1))
     elements.append(Spacer(1, 10))
 
-    # Client Info
+    # --- Client Info ---
     elements.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%B %d, %Y')}", small))
     elements.append(Paragraph(f"<b>Client:</b> {client_name}", small))
     elements.append(Paragraph(f"<b>Address:</b> {client_address}", small))
     elements.append(Spacer(1, 10))
 
-    # Subject and Intro Text
+    # --- Company Header ---
+
+    if company_address:
+        elements.append(Paragraph(company_address, small))
+    if company_contact:
+        elements.append(Paragraph(company_contact, small))
+    elements.append(Spacer(1, 6))
+
+    # --- Subject & Intro ---
     elements.append(Paragraph("SUBJECT: SUPPLY & INSTALLATION OF Fixed panel with sliding door, Frame glass door, Fixed with frame glassdoor", section_title))
     elements.append(Spacer(1, 6))
     elements.append(Paragraph("Dear Ma’am/Sir,", small))
@@ -158,7 +178,7 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
     elements.append(Paragraph("In response to your request, we are pleased to quote you our best price offer for your perusal.", small))
     elements.append(Spacer(1, 12))
 
-    # Pricing Table
+    # --- Pricing Table ---
     elements.append(Paragraph("PRICING", section_title))
     elements.append(Spacer(1, 4))
 
@@ -166,7 +186,7 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
     total = 0
 
     for i, item in enumerate(items_quote, 1):
-        line_total = item['quantity'] * item['unit_price']
+        line_total = item["quantity"] * item["unit_price"]
         total += line_total
         table_data.append([
             str(i),
@@ -178,7 +198,7 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
 
     table = Table(table_data, colWidths=[20, 250, 40, 80, 80])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#d6eaff")),  # Header row
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#d6eaff")),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#003e74")),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
@@ -190,12 +210,12 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
     ]))
     elements.append(table)
 
-    # Total
+    # --- Total ---
     elements.append(Spacer(1, 10))
     elements.append(Paragraph(f"<b>Grand Total:</b> {format_currency(total)}", bold))
     elements.append(Spacer(1, 14))
 
-    # Materials
+    # --- Materials ---
     elements.append(Paragraph("MATERIALS TO BE USED", section_title))
     elements.append(Spacer(1, 4))
     for item in items_quote:
@@ -204,29 +224,31 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
             elements.append(Paragraph(f"• {material}", small))
         elements.append(Spacer(1, 4))
 
-    # Scope of Work
+    # --- Scope of Work ---
     elements.append(Spacer(1, 12))
     elements.append(Paragraph("SCOPE OF WORKS", section_title))
-    elements.append(Paragraph("1. Supply & Installation", small))
+    for line in scope_of_work:
+        elements.append(Paragraph(f"• {line}", small))
 
-    # Payment Terms
+    # --- Terms of Payment ---
     elements.append(Spacer(1, 10))
     elements.append(Paragraph("TERMS OF PAYMENT", section_title))
-    elements.append(Paragraph("• 50% down payment is required to start the service.", small))
-    elements.append(Paragraph("• Final payment upon delivery and completion.", small))
+    for line in terms_of_payment:
+        elements.append(Paragraph(f"• {line}", small))
 
-    # Warranty
+    # --- Warranty ---
     elements.append(Spacer(1, 10))
     elements.append(Paragraph("WARRANTY", section_title))
-    elements.append(Paragraph("• 3 months for hardware & accessories", small))
-    elements.append(Paragraph("• 6 months for resealant & alignment", small))
+    for line in warranty:
+        elements.append(Paragraph(f"• {line}", small))
 
-    # Lead Time
+    # --- Lead Time ---
     elements.append(Spacer(1, 10))
     elements.append(Paragraph("LEAD TIME", section_title))
-    elements.append(Paragraph("• 10 working days", small))
+    for line in lead_time:
+        elements.append(Paragraph(f"• {line}", small))
 
-    # Footer
+    # --- Footer ---
     elements.append(Spacer(1, 20))
     elements.append(HRFlowable(width="100%", color=colors.grey, thickness=0.5))
     elements.append(Spacer(1, 12))
@@ -234,17 +256,16 @@ def generate_modern_quotation_pdf(filename, client_name, client_address, items_q
     elements.append(Spacer(1, 24))
     elements.append(Paragraph("Sincerely,", small))
     elements.append(Spacer(1, 20))
-    elements.append(Paragraph("Emma Nuelle J. Mendoza", bold))
-    elements.append(Paragraph("General Manager", small))
+    elements.append(Paragraph(owner_name, bold))
+    elements.append(Paragraph(owner_position, small))
 
-    # Build the PDF
+    # --- Build PDF ---
     doc = SimpleDocTemplate(
         filename, pagesize=letter,
         rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30
     )
     doc.build(elements)
     print(f"✅ Quotation PDF generated: {filename}")
-
 
 #----------- Reports ----------
 

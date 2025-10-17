@@ -54,7 +54,7 @@ body {
     display: grid;
     width: 100%;
     gap: 1.8rem;
-    grid-template-columns: 14rem auto;
+    grid-template-columns: 5rem auto;
     padding: 0 1.5rem;
 }
 

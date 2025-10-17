@@ -144,6 +144,68 @@
     right: 5%;
   }
 }
+@media (max-width: 768px) {
+
+  /* Notification icon — larger touch area */
+  .notif-icon {
+    font-size: 30px;
+    padding: 8px;
+  }
+
+  /* Fullscreen overlay for better UX */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    z-index: 998;
+  }
+
+  /* Show dim background when box is visible */
+  .notification-box[style*="display: block"] ~ body::after {
+    display: block;
+  }
+
+  /* Notification box — full width and centered on mobile */
+  .notification-box {
+    position: fixed !important;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+    max-width: 420px;
+    max-height: 60vh;
+    border-radius: 12px;
+    padding: 1rem;
+    z-index: 9999;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Scroll behavior and text spacing */
+  .notification-box h3 {
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .category {
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .category h4 {
+    font-size: 14px;
+  }
+
+  .category li {
+    font-size: 13px;
+  }
+
+  .view-more {
+    font-size: 13px;
+  }
+}
 
 </style>
 

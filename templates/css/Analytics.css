@@ -56,7 +56,7 @@ body {
     display: grid;
     width: 100%;
     gap: 1.8rem;
-    grid-template-columns: 14rem auto;
+    grid-template-columns: 5rem auto;
     padding: 0 1.5rem;
 }
 
@@ -480,3 +480,88 @@ main .date input[type='date'] {
 .report-container.show .report-bubble {
   display: block;
 }
+
+.recommendation-box { margin-top: 0.5rem; }
+.month-block { background:#fbfbfb; border:1px solid #eee; padding:10px; border-radius:8px; margin-bottom:10px; }
+.month-header { cursor:pointer; margin:0 0 6px 0; font-size:1rem; display:flex; align-items:center; }
+.arrow { display:inline-block; width:1rem; margin-right:0.3rem; transition: transform 0.2s ease; }
+.month-recs { margin:0 0 0 1.4rem; padding:0; }
+.month-recs li { margin-bottom:6px; }
+.collapsed .month-recs { display:none; }
+.collapsed .arrow { transform: rotate(0deg); } /* ▶ */
+.month-block:not(.collapsed) .arrow { transform: rotate(90deg); } /* ▼ */
+
+  .top h2 {
+  margin: 0;
+  position: relative;
+  left: -20px;  /* adjust this value to move left */
+}
+  .recommendation-box {
+  background: #f9f9f9;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  border-left: 5px solid #4caf50;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+/* Bubble Wrapper inside chart */
+.bubble-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+/* Button inside chart box */
+.bubble-btn {
+  padding: 0.6rem 1rem;
+  background-color: var(--color-primary, #38bdf8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  box-shadow: var(--box-shadow);
+  transition: background-color 0.3s;
+}
+.bubble-btn:hover {
+  background-color: #0ea5e9;
+}
+
+/* Pop-up bubble */
+.popup-bubble {
+  display: none;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-white);
+  border: 2px solid var(--color-primary, #38bdf8);
+  border-radius: var(--card-border-radius, 15px);
+  box-shadow: var(--box-shadow);
+  padding: 1rem;
+  width: 350px;
+  max-width: 90vw;
+  z-index: 1000;
+}
+
+/* Optional: arrow */
+.popup-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 10px;
+  border-style: solid;
+  border-color: var(--color-primary, #38bdf8) transparent transparent transparent;
+}
+
+/* Close button */
+.close-btn {
+  float: right;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--color-dark, #333);
+  cursor: pointer;
+}
+

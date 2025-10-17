@@ -2,88 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Analytics.css?v=4">
+  <link rel="stylesheet" href="../css/Analytics.css?v=5">
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  
 <style>
-  .top h2 {
-  margin: 0;
-  position: relative;
-  left: -20px;  /* adjust this value to move left */
-}
-  .recommendation-box {
-  background: #f9f9f9;
-  padding: 1rem;
-  margin-top: 0.5rem;
-  border-left: 5px solid #4caf50;
-  border-radius: 6px;
-  font-size: 0.95rem;
-}
-/* Bubble Wrapper inside chart */
-.bubble-wrapper {
-  position: relative;
-  display: inline-block;
-  margin-top: 1rem;
-}
+  /* ---------- ANALYTICS MOBILE LAYOUT ---------- */
+@media screen and (max-width: 768px) {
+  .chart-box {
+    position: relative; 
+  }
 
-/* Button inside chart box */
-.bubble-btn {
-  padding: 0.6rem 1rem;
-  background-color: var(--color-primary, #38bdf8);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  box-shadow: var(--box-shadow);
-  transition: background-color 0.3s;
-}
-.bubble-btn:hover {
-  background-color: #0ea5e9;
-}
+  .chart-box .bubble-wrapper {
+    display: flex;
+    justify-content: center; 
+    margin-top: 1rem;       
+  }
+  /* Container */
+  .container {
+    grid-template-columns: 1fr;
+    padding: 0 1rem;
+  }
 
-/* Pop-up bubble */
-.popup-bubble {
-  display: none;
-  position: absolute;
-  bottom: 130%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-white);
-  border: 2px solid var(--color-primary, #38bdf8);
-  border-radius: var(--card-border-radius, 15px);
-  box-shadow: var(--box-shadow);
-  padding: 1rem;
-  width: 350px;
-  max-width: 90vw;
-  z-index: 1000;
-}
+  main {
+    padding: 1rem 1rem 2rem 1rem;
+  }
 
-/* Optional: arrow */
-.popup-bubble::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 10px;
-  border-style: solid;
-  border-color: var(--color-primary, #38bdf8) transparent transparent transparent;
-}
+  aside {
+    height: auto;
+    width: 100%;
+    position: relative;
+  }
 
-/* Close button */
-.close-btn {
-  float: right;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: var(--color-dark, #333);
-  cursor: pointer;
-}
+  aside .sidebar {
+    height: auto;
+  }
 
+  /* Header bar aligned like other tabs */
+  .header-bar {
+    flex-direction: row;        /* horizontal layout */
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding-right: 0;
+  }
+
+  /* Top bar inside header */
+  .top-bar {
+    gap: 0.5rem;
+  }
+
+  /* Summary cards stack */
+  #summary-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Charts stack vertically */
+  .chart-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Filter buttons wrap */
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
+
+  /* Main date input full width */
+  main .date {
+    width: 100%;
+    padding: 0.5rem 1rem;
+  }
+
+  main .date input[type='date'] {
+    width: 100%;
+  }
+
+
+}
 
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.month-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      let block = header.parentElement;
+      block.classList.toggle('collapsed');
+      let arrow = header.querySelector('.arrow');
+      arrow.textContent = block.classList.contains('collapsed') ? '▶' : '▼';
+    });
+  });
+});
+</script>
+
+
 </head>
 <body>
   <div class="container">
@@ -93,9 +110,9 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
         <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
+    </div>
+    <div class="mobile-menu-btn">
+      <span class="material-symbols-sharp">menu</span>
     </div>
        {% include "sidebar.html" %}
 </aside>
@@ -186,19 +203,39 @@
 
     </div>
   <!-- Chart -->
+   
   <div class="chart-container">
     {{ stl_html | safe }}
 
-    <section class="analytics-section">
-      <h3>📈 STL-Based Order Trend Recommendation</h3>
-      <div class="recommendation-box">
-        <ul>
-          {% for rec in stl_recommendation %}
-            <li>{{ rec | safe }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </section>
+<section class="analytics-section">
+  <h3>📈 STL-Based Order Trend Recommendation</h3>
+
+  <div class="recommendation-box">
+    {% if stl_recommendation_grouped %}
+      {% for block in stl_recommendation_grouped %}
+        <div class="month-block {% if not loop.first %}collapsed{% endif %}">
+          <h4 class="month-header">
+            <span class="arrow">{% if loop.first %}▼{% else %}▶{% endif %}</span>
+            📅 {{ block.month }}
+          </h4>
+          <ul class="month-recs">
+            {% for rec in block.recs %}
+              <li>{{ rec | safe }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% else %}
+      <ul>
+        {% for rec in stl_recommendation %}
+          <li>{{ rec | safe }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</section>
+
+
 
   </div>
 </div>

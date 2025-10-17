@@ -2,28 +2,139 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/style.css?v=3">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/style.css?v=5">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <style>
+<style>
+@media screen and (max-width: 768px) {
 
-  </style>
+  /* ---------- GENERAL LAYOUT ---------- */
+  .container {
+    display: block;
+    width: 650px;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  main {
+    width: 650px;
+    margin: 0;
+    padding: 1rem 1rem 2rem 1rem; /* adds side padding for readability */
+  }
+
+  /* ---------- BURGER BUTTON ---------- */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: none;
+    cursor: pointer;
+    position: fixed;
+    top: 0.8rem;
+    left: 1rem;
+    z-index: 300;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .mobile-menu-btn span {
+    font-size: 2rem;
+    color: var(--color-primary);
+  }
+
+  /* ---------- HEADER AREA ---------- */
+  .top {
+    padding-left: 3.8rem; /* makes room for burger */
+  }
+
+  header,
+  .header-bar {
+    padding: 0 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .header-bar h1,
+  .header-bar h2 {
+    font-size: 1.2rem;
+  }
+
+  /* ---------- SUMMARY CARDS ---------- */
+  #summary-cards,
+  .insights,
+  .cards-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  #summary-cards > div,
+  .insights > div,
+  .summary-card {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  /* ---------- CHARTS ---------- */
+  .chart-row {
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .chart-box {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: unset;
+  }
+
+  /* ---------- RECENT TRANSACTIONS ---------- */
+  .recent-transaction {
+    width: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  .recent-transaction table {
+    width: 100%;
+    font-size: 0.9rem;
+    min-width: unset;
+  }
+
+  /* ---------- TEXT SIZE ADJUSTMENTS ---------- */
+  body,
+  main,
+  table,
+  .summary-card {
+    font-size: 1rem; /* restore readability */
+  }
+
+}
+</style>
+
 </head>
 <body>
+
   <div class="container">
     <aside>
-      <div class="top">
+      <div class="top"> 
         <div class="logo">
           <img src="../images/TIMESTOCK_BG.png">
         </div>
         <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
     </div>
+  <div class="mobile-menu-btn">
+  <span class="material-symbols-sharp">menu</span>
+</div>
 
  {% include "sidebar.html" %}
 </aside>
