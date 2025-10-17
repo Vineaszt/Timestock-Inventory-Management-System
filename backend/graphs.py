@@ -8,9 +8,14 @@ from plotly.utils import PlotlyJSONEncoder
 import plotly.subplots as sp
 from statsmodels.tsa.seasonal import STL
 import json
+import os
+
+MOTHERDUCK_TOKEN = os.getenv("MOTHERDUCK_TOKEN")
+if not MOTHERDUCK_TOKEN:
+    raise RuntimeError("MOTHERDUCK_TOKEN not set")
 
 def get_graph_html(period='month'):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Total Orders
     df_orders = con.execute(f"""
@@ -99,7 +104,7 @@ def generate_chart_report(df):
     """
     
 def get_turnover_combined_graph():
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     df = con.execute("""
         WITH monthly_data AS (
@@ -229,7 +234,7 @@ def get_fastest_moving_materials_chart():
     LIMIT 10;
     """
 
-    with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
     if df.empty:
@@ -322,7 +327,7 @@ def get_reorder_point_chart(return_df=False):
         ORDER BY reorder_status DESC, item_name;
     """
 
-    with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
     if return_df:
@@ -375,7 +380,7 @@ def get_reorder_point_chart(return_df=False):
 
 
 def get_stl_decomposition_graph():
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Monthly order quantity
     query = """
@@ -636,7 +641,7 @@ def generate_recommendations_from_stl(df: pd.DataFrame, result, top_products_df:
 
 
 def get_sales_moving_average_chart():
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Total monthly sales
     df = con.execute("""
@@ -831,7 +836,7 @@ def generate_sales_moving_average_report(df: pd.DataFrame) -> str:
 
 # ------------ Reports -----------
 def get_text_report_for_month(year: int, month: int):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
         SELECT 
@@ -882,7 +887,7 @@ def get_text_report_for_month(year: int, month: int):
     }
 
 def get_turnover_text_report_for_month(year: int, month: int):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
         WITH monthly_data AS (
@@ -946,7 +951,7 @@ def get_turnover_text_report_for_month(year: int, month: int):
     }
 
 def get_stl_text_report_for_month(year: int, month: int):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Monthly order quantity
     query = """
@@ -1036,7 +1041,7 @@ def get_stl_text_report_for_month(year: int, month: int):
     }
 
 def get_sales_moving_average_text_report(year: int, month: int | None = None):
-    with duckdb.connect('backend/db_timestock') as con:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as con:
         # --- get full dataset (no filtering here) ---
         df = con.execute("""
         SELECT
@@ -1113,7 +1118,7 @@ def get_sales_moving_average_text_report(year: int, month: int | None = None):
         }
 
 def get_stock_movement_report_for_month(year: int, month: int):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
         SELECT 
@@ -1162,7 +1167,7 @@ def get_stock_movement_report_for_month(year: int, month: int):
     }
 
 def get_products_sold_for_month(year: int, month: int):
-    con = duckdb.connect('backend/db_timestock')
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     query = f"""
         SELECT 

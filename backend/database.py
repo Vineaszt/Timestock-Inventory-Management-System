@@ -5,10 +5,13 @@ from fastapi import HTTPException, Request
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from typing import List, Dict, Any, Optional
+import os
 
+MOTHERDUCK_TOKEN = os.getenv("MOTHERDUCK_TOKEN")
+if not MOTHERDUCK_TOKEN:
+    raise RuntimeError("MOTHERDUCK_TOKEN not set")
 
-
-con = duckdb.connect('backend/db_timestock')
+con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 ph = PasswordHasher()
 
 
@@ -588,7 +591,7 @@ def delete_product_categories(
 
 # Material_categories CRUD
 def get_material_categories():
-      with duckdb.connect('backend/db_timestock') as conn:
+      with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         return conn.execute("SELECT * FROM material_categories").fetchdf()
 
 
@@ -1299,7 +1302,7 @@ def stock_materials(
 
 
 def get_stock_transactions_detailed():
-    with duckdb.connect('backend/db_timestock') as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         return conn.execute("""
             SELECT 
                 st.id AS transaction_id,
@@ -1598,7 +1601,7 @@ def delete_customer(id: str, admin_id: Optional[str] = None, cur=None):
 
 #Products CRUD
 def get_products():
-    with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         return conn.execute("""
             SELECT 
                 i.id AS item_id,
@@ -1800,7 +1803,7 @@ def delete_product(product_id: str, admin_id: Optional[str] = None, cur=None):
     own_cursor = False
     # prefer using provided cursor/conn; else create a local connection like before
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -1861,7 +1864,7 @@ def delete_product(product_id: str, admin_id: Optional[str] = None, cur=None):
 
 #Suppliers CRUD
 def get_suppliers():
-        with duckdb.connect('backend/db_timestock') as conn:
+        with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
             return conn.execute("SELECT * FROM suppliers").fetchdf()
 
 # THIS IS DONE
@@ -1877,7 +1880,7 @@ def add_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -1946,7 +1949,7 @@ def update_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -2029,7 +2032,7 @@ def delete_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -2384,12 +2387,12 @@ def get_order_statuses():
 
 # Auth
 def get_user_by_email(email: str):
-    conn = duckdb.connect('backend/db_timestock')
+    conn = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Check admin
     admin_query = """
         SELECT id, firstname, lastname, email, password, 'admin' AS role
-        FROM admin
+        FROM main.admin
         WHERE email = ?
         LIMIT 1
     """
@@ -2403,7 +2406,7 @@ def get_user_by_email(email: str):
     employee_query = """
         SELECT id, firstname, lastname, email, password, 'employee' AS role,
                contact_number, is_active
-        FROM employees
+        FROM main.employees
         WHERE email = ?
         LIMIT 1
     """
@@ -2842,7 +2845,7 @@ def get_audit_logs(limit: int = 100, offset: int = 0, cur=None) -> List[Dict[str
 
     if cur is None:
         # use a short-lived connection so callers don't need to pass one
-        conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
