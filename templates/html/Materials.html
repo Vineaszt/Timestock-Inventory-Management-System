@@ -2,473 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.55">
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Materials.css?v=6">
+  <link rel="stylesheet" href="../css/Materials.css?v=7">
 <style>
-:root {
-    --border-radius-1: 4px;
-    --border-radius-2: 8px;
-    --box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
+/* ---------- MOBILE LAYOUT ---------- */
+@media screen and (max-width: 768px) {
 
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4);
-}
+  /* ---------- CONTAINERS ---------- */
+  .container, main, header, .header-bar {
+    width: 1000px;    
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
 
-.modal-content {
-    background: #fff;
-    margin: 3% auto;
+  .container {
+    display: block;
     padding: 0;
-    border-radius: var(--border-radius-2);
-    width: 90%;
-    max-width: 500px;
-    box-shadow: var(--box-shadow);
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
+  }
 
-.modal-header {
-    padding: 20px 20px 0 20px;
+  main {
+    margin: 0 auto;
+    padding: 1rem 1rem 2rem 1rem;
+  }
+
+  /* ---------- BURGER BUTTON ---------- */
+  .mobile-menu-btn {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 20px;
-    position: sticky;
-    top: 0;
+    justify-content: center;
     background: white;
-    z-index: 1;
-}
-
-.modal-header h3,
-.modal-header h4 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-}
-
-.close {
-    font-size: 24px;
-    color: #999;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    background: none;
     border: none;
-}
+    cursor: pointer;
+    position: fixed;
+    top: 0.8rem;
+    left: 1rem;
+    z-index: 300;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
 
-.close:hover {
-    color: #333;
-}
+  .mobile-menu-btn span {
+    font-size: 2rem;
+    color: var(--color-primary);
+  }
 
-.modal-body {
-    padding: 0 20px 20px 20px;
-}
+  /* ---------- HEADER AREA ---------- */
+  .top {
+    padding-left: 3.8rem;
+  }
 
-.form-grid {
+  .header-bar h1,
+  .header-bar h2 {
+    font-size: 1.2rem;
+  }
+
+  /* ---------- SUMMARY CARDS ---------- */
+  #summary-cards,
+  .insights,
+  .cards-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group.full-width {
-    grid-column: 1 / -1;
-}
-
-.form-group label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #555;
-    margin-bottom: 5px;
-}
-
-.modal-content input,
-.modal-content select,
-.form-control,
-.form-select {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    transition: border-color 0.2s;
-}
-
-.modal-content input:focus,
-.modal-content select:focus,
-.form-control:focus,
-.form-select:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-}
-
-.modal-content input[readonly] {
-    background-color: #f8f9fa;
-    color: #666;
-}
-
-.modal-actions {
-    padding: 15px 20px 20px 20px;
-    border-top: 1px solid #f0f0f0;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    position: sticky;
-    bottom: 0;
-    background: white;
-}
-
-.create-btn-modal,
-.update-btn-modal,
-.btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius-1);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.create-btn-modal:hover,
-.update-btn-modal:hover,
-.btn:hover {
-    background: #0056b3;
-}
-
-.btn-primary {
-    background: #007bff;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-}
-
-.w-100 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
     width: 100%;
-}
+    margin-top: 1rem;
+  }
 
-.mb-2 {
-    margin-bottom: 10px;
-}
+  #summary-cards > div,
+  .insights > div,
+  .summary-card {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+  }
 
-.mb-3 {
-    margin-bottom: 15px;
-}
+  /* ---------- CRUD & MODAL BUTTONS ---------- */
+  .crud-buttons,
+  .modal-actions {
+    display: flex;
+    flex-wrap: nowrap;       /* single row */
+    gap: 0.5rem;             /* spacing between buttons */
+    justify-content: space-between;
+  }
 
-/* Stock modal specific styling */
-.stock-info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.info-card {
-    background: #f8f9fa;
-    padding: 12px;
-    border-radius: var(--border-radius-1);
-    border: 1px solid #e9ecef;
-}
-
-.info-label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-    margin-bottom: 5px;
-}
-
-.info-value {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-}
-
-@media (max-width: 600px) {
-    .modal-content {
-        margin: 5% auto;
-        max-width: 95%;
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .stock-info-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-}
-
-/* Demo button for testing */
-.demo-buttons {
-    padding: 20px;
+  .crud-buttons button,
+  .modal-actions button {
+    flex: 1 1 0;             /* stretch evenly */
     text-align: center;
-}
+    min-width: 0;
+    padding: 0.8rem 0;       /* tap-friendly height */
+    font-size: 0.95rem;
+  }
 
-.demo-btn {
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    margin: 0 10px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.top h2 {
-  margin: 0;
-  position: relative;
-  left: -20px;  /* adjust this value to move left */
-}
-.delete-btn {
-  background-color: #ff0000;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  margin-left: 5px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.delete-btn:hover {
-  background-color: #cc0000;
-}
-
-.clear-filters-btn {
-  padding: 6px 12px;
-  height: 34px; /* match input height */
-  border: none;
-  background-color: #dc3545;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-.clear-filters-btn {
-  width: auto;        /* shrink to fit content */
-  padding: 6px 12px;  /* adjust size */
-  font-size: 14px;
-  height: 30px;       /* match input height if you want */
-  align-self: flex-start; /* prevent stretching */
-}
-
-
-.clear-filters-btn:hover {
-  background-color: #b02a37;
-}
-
-/* Filter Bar Container */
-.filters {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 15px;
-  padding: 15px;
-  background: #f9fafb;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  align-items: flex-end;
-}
-.filter-left {
-  display: flex;
-  gap: 10px;
-}
-
-.filter-right {
-  display: flex;
-  gap: 10px;
-}
-
-/* Individual filter group */
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Range group */
-.range-group .range-inputs {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.range-group input {
-  width: 80px;
-}
-
-/* Labels */
-.filters label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* Inputs & Selects */
-.filters input,
-.filters select {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  background-color: #fff;
-  transition: all 0.2s ease;
-}
-
-/* Wider search field */
-#searchInput {
-  width: 220px;
-}
-
-/* Hover & Focus */
-.filters input:focus,
-.filters select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 4px rgba(0, 123, 255, 0.25);
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
+  /* ---------- FILTER BAR ---------- */
   .filters {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .filter-group {
-    width: 100%;
-  }
-
+  .filter-group,
   .range-group .range-inputs {
+    width: 100%;
     flex-wrap: nowrap;
   }
 
   .range-group input {
     flex: 1;
   }
-}
-.action-buttons {
-  display: flex;
-  gap: 5px;          /* spacing between buttons */
-  justify-content: flex-start;
-  flex-wrap: wrap;    /* wrap buttons if needed on smaller screens */
-}
-.action-buttons button {
-  flex: 1 0 auto;     
-  min-width: 60px;    /* optional: maintain readable size */
-}
-#productTable th:last-child,
-#productTable td:last-child {
-  width: 180px; /* enough for 3 buttons */
-  white-space: nowrap; /* prevent line breaks */
-}
-.stock-btn {
-  background-color: #dfdcdc; 
-  color: rgb(0, 0, 0);
-  padding: 6px 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
 
-.stock-btn:hover {
-  background-color: #aca9a9; /* darker orange */
+  /* ---------- TABLE ---------- */
+  .table-scroll {
+    height: calc(100vh - 250px); /* adjust for header + filters */
+  }
+
+  #productTable th:last-child,
+  #productTable td:last-child {
+    min-width: 140px;   /* ensures buttons fit */
+    white-space: nowrap;
+  }
+
+  .action-buttons {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .action-buttons button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* ---------- MODALS ---------- */
+  .modal-content,
+  #productMaterialModal .modal-box {
+    width: 95%;
+    max-width: 95%;
+    margin: 5% auto;
+    padding: 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr; /* stack form fields */
+    gap: 12px;
+  }
+
+  .stock-info-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
-
-.stock-btn:active {
-  transform: scale(0.97);
-}
-
-.edit-btn {
-  background-color: #007bff; /* Bootstrap green */
-  color: white;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.edit-btn:hover {
-  background-color: #0056b3; /* Darker green on hover */
-}
-
-.edit-btn:active {
-  background-color: #1e7e34; /* Even darker when clicked */
-  transform: scale(0.97);
-}/* Make table container take remaining screen space */
-
-.table-scroll {
-  height: calc(100vh - (65px + 90px)); /* header + filters */
-  width: 100%;
-  overflow-y: auto;
-}
-
-#productTable {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed; /* Makes columns scale properly */
-}
-
-#productTable th, #productTable td {
-  padding: 8px;
-  word-wrap: break-word; /* Prevents overflow text */
-}
-#productTable th:last-child,
-#productTable td:last-child {
-  min-width: 140px; /* adjust as needed */
-}
-
-
-/* Pagination styling remains the same */
-.pagination {
-  display: flex;
-  justify-content: flex-start;
-  gap: 8px;
-  margin-top: 10px;
-  flex-shrink: 0;          /* Prevent from shrinking */
-}
-
-.pagination button {
-  padding: 6px 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  transition: background 0.3s, box-shadow 0.2s;
-}
-
-.pagination button:hover {
-  background: #007bff;
-  color: white;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
+</style>
 
 </style>
 </head>
@@ -480,11 +165,11 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
             <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
-    </div>
 
+    </div>
+  <div class="mobile-menu-btn">
+  <span class="material-symbols-sharp">menu</span>
+</div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->
@@ -1635,7 +1320,7 @@ function removeMaterialInput(index) {
 async function submitStockMaterials(event) {
   event.preventDefault();
 
-  const stockTypeId = "STT001"; // ✅ Always use Manual Stock-in
+  const stockTypeId = "STT001"; //Always use Manual Stock-in
   const supplierId = document.getElementById("supplierId").value.trim() || null;
 
   const supplier = {
@@ -1729,6 +1414,10 @@ async function submitSingleStock() {
   const materialId = document.getElementById("singleStockModal").dataset.materialId;
   const quantity = parseInt(document.getElementById("stockMaterialQty").value);
   const supplierId = document.getElementById("singleStockSupplier").value || null;
+
+  if (!materialId) return alert("Material not specified!");
+  if (!quantity || quantity < 1) return alert("Enter a valid quantity");
+  if (!supplierId) return alert("Please select a supplier");
 
   if (!quantity || quantity < 1) return alert("Enter a valid quantity");
 

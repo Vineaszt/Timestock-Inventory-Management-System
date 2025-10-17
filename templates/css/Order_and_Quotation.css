@@ -56,7 +56,7 @@ body {
     display: grid;
     width: 100%;
     gap: 1.8rem;
-    grid-template-columns: 14rem auto;
+    grid-template-columns: 5rem auto;
     padding: 0 1.5rem;
 }
 
@@ -256,6 +256,85 @@ main .date input[type='date'] {
 }
 
 /* Modal content layout */
+  .modal {
+  display: none; /* default hidden */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background: #fff;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 1000px;
+  display: flex;
+  gap: 20px;
+  position: relative;
+}
+
+.modal-content.two-column {
+  display: flex;
+}
+
+.modal-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  padding-right: 15px;
+  max-height: 80vh;
+}
+
+.modal-scroll-area {
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 5px; /* prevents scrollbar overlap */
+}
+
+.modal-footer-btns {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+}
+
+.modal-right {
+  flex: 1;
+  padding-left: 15px;
+  overflow: hidden;
+}
+
+.section-input {
+  margin-top: 15px;
+}
+
+.section-input label {
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.form-control {
+  width: 100%;
+  padding: 6px;
+  margin-bottom: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn {
+  border-radius: 6px;
+}
+
 .modal-content.two-column {
   display: flex;
   flex-direction: row;
@@ -358,7 +437,8 @@ main .date input[type='date'] {
 }
 
 /* Input and Buttons */
-.modal-left input[type="number"] {
+.modal-left input[type="number"],
+.modal-left input[type="text"] {
   padding: 0.5rem 0.75rem;
   font-size: 14px;
   margin-bottom: 1rem;
@@ -367,6 +447,7 @@ main .date input[type='date'] {
   width: 100%;
   box-sizing: border-box;
 }
+
 
 /* Button Styling */
 .modal-left .btn,
@@ -700,4 +781,10 @@ button.btn:hover {
 /* Make full width buttons consistent in modals */
 button.btn.w-100 {
   width: 100%;
+}
+
+  .top h2 {
+  margin: 0;
+  position: relative;
+  left: -20px;  /* adjust this value to move left */
 }

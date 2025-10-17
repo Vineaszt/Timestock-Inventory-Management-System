@@ -2,13 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Times Stock IMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.6">
+  <title>Times Stock IMS</title>  
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/product.css?v=3">
-<style>
+  <link rel="stylesheet" href="../css/product.css?v=4">
+
+  <style>
+        /* ---------- MOBILE LAYOUT ---------- */
+  @media screen and (max-width: 768px) {
+
+    .container, main, header, .header-bar {
+      width: 100%;        
+      max-width: 900px;   
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    .container {
+      display: block;
+      width: 900px;  
+      padding: 0;
+      margin: 0 auto;     
+      box-sizing: border-box;
+    }
+
+    main {
+      width: 900px;
+      margin: 0 auto;
+      padding: 1rem 1rem 2rem 1rem;
+      box-sizing: border-box;
+    }
+
+    header,
+    .header-bar {
+      padding: 0 1rem;
+      width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
+    }
+
+    /* ---------- BURGER BUTTON ---------- */
+    .mobile-menu-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border: none;
+      cursor: pointer;
+      position: fixed;
+      top: 0.8rem;
+      left: 1rem;
+      z-index: 300;
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .mobile-menu-btn span {
+      font-size: 2rem;
+      color: var(--color-primary);
+    }
+
+    /* ---------- HEADER AREA ---------- */
+    .top {
+      padding-left: 3.8rem;
+    }
+
+    .header-bar h1,
+    .header-bar h2 {
+      font-size: 1.2rem;
+    }
+
+    /* ---------- SUMMARY CARDS ---------- */
+    #summary-cards,
+    .insights,
+    .cards-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    #summary-cards > div,
+    .insights > div,
+    .summary-card {
+      width: 100%;
+      padding: 1rem;
+      font-size: 1rem;
+    }
+
+      /* CRUD buttons side by side, evenly stretched */
+  .crud-buttons,
+  .modal-actions {
+    display: flex;
+    flex-wrap: nowrap;        /* keep buttons in a single row */
+    gap: 0.5rem;              /* space between buttons */
+    justify-content: space-between;
+  }
+
+  .crud-buttons button,
+  .modal-actions button {
+    flex: 1 1 0;              /* stretch buttons evenly */
+    text-align: center;
+    min-width: 0;             /* remove minimum width restriction */
+    padding: 0.8rem 0;        /* increase tappable area */
+    font-size: 0.95rem;       /* adjust font size for mobile */
+  }
+    
+
+  }
 
 </style>
+
+
 </head>
 <body>
   <div class="container">
@@ -18,11 +127,10 @@
           <img src="../images/TIMESTOCK_BG.png">
         </div>
         <h2>TIME<span class="danger">STOCK</span></h2>
-        <div class="close" id="close-btn">
-            <span class="material-symbols-sharp">close </span>        
-      </div>
     </div>
-
+  <div class="mobile-menu-btn">
+  <span class="material-symbols-sharp">menu</span>
+</div>
        {% include "sidebar.html" %}
 </aside>
 <!-----END OF ASIDE MUENU----->

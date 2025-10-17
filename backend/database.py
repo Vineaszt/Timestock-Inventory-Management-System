@@ -5,10 +5,18 @@ from fastapi import HTTPException, Request
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from typing import List, Dict, Any, Optional
+import os
 
 
+MOTHERDUCK_TOKEN = os.getenv("MOTHERDUCK_TOKEN")
+if not MOTHERDUCK_TOKEN:
+    raise RuntimeError("MOTHERDUCK_TOKEN not set")
 
-con = duckdb.connect('backend/db_timestock')
+con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+
+# con = duckdb.connect('backend/db_timestock')
+
+
 ph = PasswordHasher()
 
 
@@ -99,7 +107,7 @@ def get_product_materials_grouped():
     return list(grouped.values())
 
 
-# THIS IS DONE
+  
 def add_product_materials(
     data: dict,
     admin_id: Optional[str] = None,
@@ -227,7 +235,7 @@ def get_product_materials_by_product_id(product_id: str):
     ]
 
 
-# THIS IS DONE
+  
 def update_product_material(
     product_id: str, 
     material_id: str | None = None, 
@@ -294,7 +302,7 @@ def update_product_material(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def delete_product_material(
     product_id: str, 
     material_id: str,
@@ -391,7 +399,7 @@ def calculate_quote(product_id: str):
 def get_product_categories():
     return con.execute("SELECT * FROM product_categories").fetchdf()
 
-# THIS IS DONE
+  
 def add_product_category(
     data: dict,
     admin_id: Optional[str] = None,
@@ -462,7 +470,7 @@ def add_product_category(
         raise
 
 
-# THIS IS DONE
+  
 def update_product_category(
     id: str, 
     data: dict,
@@ -524,7 +532,7 @@ def update_product_category(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def delete_product_categories(
     id: str,
     admin_id: Optional[str] = None,
@@ -588,11 +596,12 @@ def delete_product_categories(
 
 # Material_categories CRUD
 def get_material_categories():
-      with duckdb.connect('backend/db_timestock') as conn:
+    #   with duckdb.connect('backend/db_timestock') as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         return conn.execute("SELECT * FROM material_categories").fetchdf()
 
 
-# THIS IS DONE
+  
 def add_material_category(
     data: dict,
     admin_id: Optional[str] = None,
@@ -663,7 +672,7 @@ def add_material_category(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def update_material_category(
     id: str, 
     data: dict,
@@ -725,7 +734,7 @@ def update_material_category(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def delete_material_category(
     id: str,
     admin_id: Optional[str] = None,
@@ -830,7 +839,7 @@ def get_stock_type():
         JOIN suppliers s ON m.supplier_id = s.id
     """).fetchdf()
 
-# THIS IS DONE
+  
 def update_materials(
     con,
     material_id: str,
@@ -974,7 +983,7 @@ def update_materials(
         raise e
 
 
-# THIS IS DONE
+  
 def update_order_status(
     transaction_id: str, 
     new_status_code: str, 
@@ -1053,7 +1062,7 @@ def update_order_status(
         raise e
 
 
-# THIS IS DONE
+  
 def add_material(
     data: dict,
     admin_id: Optional[str] = None,
@@ -1154,7 +1163,7 @@ def add_material(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def stock_materials(
     data: dict,
     cur=None
@@ -1299,7 +1308,8 @@ def stock_materials(
 
 
 def get_stock_transactions_detailed():
-    with duckdb.connect('backend/db_timestock') as conn:
+    # with duckdb.connect('backend/db_timestock') as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         return conn.execute("""
             SELECT 
                 st.id AS transaction_id,
@@ -1348,7 +1358,7 @@ def get_stock_transactions_detailed():
         """).fetchdf()
 
 
-# THIS IS DONE
+  
 def delete_material(
     material_id: str,
     admin_id: Optional[str] = None,
@@ -1413,7 +1423,7 @@ def delete_material(
 def get_customers():
     return con.execute("SELECT * FROM customers").fetchdf()
 
-# THIS IS DONE
+  
 def add_customer(data: dict, admin_id: Optional[str] = None, cur=None):
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
@@ -1476,7 +1486,7 @@ def add_customer(data: dict, admin_id: Optional[str] = None, cur=None):
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def update_customer(id: str, data: dict, admin_id: Optional[str] = None, cur=None):
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
@@ -1548,7 +1558,7 @@ def update_customer(id: str, data: dict, admin_id: Optional[str] = None, cur=Non
 # def delete_customer(id: str):
 #     con.execute("DELETE FROM customers WHERE id = ?", (id,))
 
-# THIS IS DONE
+  
 def delete_customer(id: str, admin_id: Optional[str] = None, cur=None):
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
@@ -1598,7 +1608,9 @@ def delete_customer(id: str, admin_id: Optional[str] = None, cur=None):
 
 #Products CRUD
 def get_products():
-    with duckdb.connect("backend/db_timestock") as conn:
+    # with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
+
         return conn.execute("""
             SELECT 
                 i.id AS item_id,
@@ -1617,7 +1629,7 @@ def get_products():
         """).fetchdf()
 
 
-# THIS IS DONE
+  
 def add_product(data: dict, admin_id: Optional[str] = None, cur=None):
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
@@ -1694,7 +1706,7 @@ def add_product(data: dict, admin_id: Optional[str] = None, cur=None):
         raise
 
 
-# THIS IS DONE
+  
 def update_product(
     con,
     product_id: str,
@@ -1791,7 +1803,7 @@ def update_product(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def delete_product(product_id: str, admin_id: Optional[str] = None, cur=None):
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
@@ -1800,7 +1812,8 @@ def delete_product(product_id: str, admin_id: Optional[str] = None, cur=None):
     own_cursor = False
     # prefer using provided cursor/conn; else create a local connection like before
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        # conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -1861,10 +1874,11 @@ def delete_product(product_id: str, admin_id: Optional[str] = None, cur=None):
 
 #Suppliers CRUD
 def get_suppliers():
-        with duckdb.connect('backend/db_timestock') as conn:
+        # with duckdb.connect('backend/db_timestock') as conn:
+        with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
             return conn.execute("SELECT * FROM suppliers").fetchdf()
 
-# THIS IS DONE
+  
 def add_supplier(
     data: dict,
     admin_id: Optional[str] = None,
@@ -1877,7 +1891,8 @@ def add_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        # conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -1932,7 +1947,7 @@ def add_supplier(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def update_supplier(
     id: str, 
     data: dict,
@@ -1946,7 +1961,8 @@ def update_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        # conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -2016,7 +2032,7 @@ def update_supplier(
             conn_used.rollback()
         raise
 
-# THIS IS DONE
+  
 def delete_supplier(
     id: str,
     admin_id: Optional[str] =  None,
@@ -2029,7 +2045,8 @@ def delete_supplier(
     own_cursor = False
 
     if cur is None:
-        conn_used = duckdb.connect('backend/db_timestock')
+        # conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -2384,7 +2401,8 @@ def get_order_statuses():
 
 # Auth
 def get_user_by_email(email: str):
-    conn = duckdb.connect('backend/db_timestock')
+    # conn = duckdb.connect('backend/db_timestock')
+    conn = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
 
     # Check admin
     admin_query = """
@@ -2450,7 +2468,7 @@ def get_employees():
         """).fetchdf()
 
 
-# THIS IS DONE
+  
 def add_employee(data: dict, admin_id: Optional[str] = None, cur=None):
     """
     Add an employee. Requires admin_id for audit logging.
@@ -2536,22 +2554,6 @@ def add_employee(data: dict, admin_id: Optional[str] = None, cur=None):
             conn_used.rollback()
         raise
 
-
-# def update_account_status(id: str, is_active: bool):
-#     status = con.execute(
-#         """
-#         UPDATE employees
-#         SET is_active = ?,
-#             date_updated = NOW()
-#         WHERE id = ?
-#         """, (is_active, id)
-#     )
-#     if status.rowcount == 0:
-#         raise HTTPException(status_code=404, detail=f"Employee {id} not found.")
-#     con.commit()
-#     return {"success": True, "id": id, "is_active": is_active}
-
-# THIS IS DONE
 def update_account_status(id: str, is_active: bool, admin_id: Optional[str] = None, cur=None):
     """
     Toggle employee active status. Requires admin_id for audit logging.
@@ -2706,7 +2708,6 @@ def change_employee_password(
             conn_used.rollback()
         raise
 
-
 def get_current_admin(request: Request):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -2842,7 +2843,9 @@ def get_audit_logs(limit: int = 100, offset: int = 0, cur=None) -> List[Dict[str
 
     if cur is None:
         # use a short-lived connection so callers don't need to pass one
-        conn_used = duckdb.connect('backend/db_timestock')
+        # conn_used = duckdb.connect('backend/db_timestock')
+        conn_used = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+
         cur = conn_used.cursor()
         own_cursor = True
     else:

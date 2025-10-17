@@ -158,7 +158,9 @@ class ReceiptRequest(BaseModel):
     phone: str
     items: list[ReceiptItem]
     down_payment: float
+    company_name: str | None = None
 
+    
 class QuotationItem(BaseModel):
     description: str
     quantity: int
@@ -169,8 +171,18 @@ class QuotationItem(BaseModel):
 class QuotationRequest(BaseModel):
     client_name: str
     client_address: str
-    items_quote: List[QuotationItem]    
-    
+    items_quote: List[QuotationItem]
+    owner_name: str
+    owner_position: str
+    scope_of_work: List[str]
+    terms_of_payment: List[str]
+    warranty: List[str]
+    lead_time: List[str]
+    company_name: str
+    company_address: Optional[str] = None
+    company_contact: Optional[str] = None
+
+
 
 # SETTINGS
 
