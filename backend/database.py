@@ -55,7 +55,7 @@ def log_audit(
         if not row:
             raise ValueError("admin_id not found")
     if employee_id:
-        row = cur.execute("SELECT 1 FROM employee WHERE id = ?", (employee_id,)).fetchone()
+        row = cur.execute("SELECT 1 FROM employees WHERE id = ?", (employee_id,)).fetchone()
         if not row:
             raise ValueError("employee_id not found")
 

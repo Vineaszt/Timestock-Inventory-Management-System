@@ -66,7 +66,13 @@ def verify_token(token: str):
 @router.get("/logout")
 def logout_user(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("session", path="/")  
+    return response
+
 
 def get_current_user(request: Request):
-    return request.session.get("user")
+    user = request.session.get("user")
+    if not user or "id" not in user:
+        return None
+    return user
