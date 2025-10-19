@@ -19,12 +19,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(SessionMiddleware, secret_key="SKQ2x3IVvY3Dqnr8QXoLfnc1F9-zTj0Zu1-vO6F2b7c")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="SKQ2x3IVvY3Dqnr8QXoLfnc1F9-zTj0Zu1-vO6F2b7c",
+    session_cookie="session",
+    same_site="lax",
+    https_only=True,   # Keep True if using HTTPS, False for local HTTP
+    max_age=3600 * 24, # 1 day
+)
 
 app.include_router(api_router, prefix="/api")
 app.include_router(auth_router)
 
 
+@app.middleware("http")
+async def no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # Set up Jinja templates directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
