@@ -218,3 +218,8 @@ class CreateAuditLog(BaseModel):
 class ReadAuditLog(BaseModel):
     id: str = Field(..., description="Audit Log record id")
     action_time: str = Field(..., description="ISO timestamp when action was recorded")
+
+# This is new:
+class UserListItem(BaseModel):
+    id: str
+    display_name: str

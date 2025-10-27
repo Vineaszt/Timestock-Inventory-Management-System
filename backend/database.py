@@ -18,6 +18,9 @@ con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_
 
 ph = PasswordHasher()
 
+def get_db_connection():
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+    return con
 
 def log_audit(
     entity: str,
@@ -2918,3 +2921,117 @@ def migrate_plaintext_passwords_to_hash():
         "updated_employee_passwords": updated["employees"]
     }
 
+#====================================================================================
+# This part is new:
+#====================================================================================
+# Role-aware list for the login dropdown
+def list_active_users_by_role(conn, role: str = "employee", q: str = None, limit: int = 50):
+    """
+    Return list[dict] like: [{'id': 'EMP001', 'display_name': 'Juan Dela Cruz'}, ...]
+    Works with your DuckDB admin and employees tables using their real column names.
+    """
+    role = (role or "employee").lower()
+    # choose table and active column semantics
+    if role == "admin":
+        table = "admin"
+        # admin table has no is_active; treat rows as active by default
+        active_pred = "1=1"
+    else:
+        table = "employees"
+        # employees use is_active boolean column
+        active_pred = "COALESCE(is_active, TRUE) = TRUE"
+
+    if q and len(q) >= 2:
+        pat = f"%{q}%"
+        sql = f"""
+        SELECT id,
+               firstname || ' ' || lastname AS display_name
+        FROM {table}
+        WHERE {active_pred}
+          AND (
+            LOWER(firstname) LIKE LOWER(?)
+            OR LOWER(lastname) LIKE LOWER(?)
+            OR LOWER(firstname || ' ' || lastname) LIKE LOWER(?)
+          )
+        LIMIT ?
+        """
+        params = [pat, pat, pat, limit]
+    else:
+        sql = f"""
+        SELECT id,
+               firstname || ' ' || lastname AS display_name
+        FROM {table}
+        WHERE {active_pred}
+        LIMIT ?
+        """
+        params = [limit]
+
+    try:
+        df = conn.execute(sql, params).fetchdf()
+        return df.to_dict(orient="records")
+    except Exception:
+        rows = conn.execute(sql, params).fetchall()
+        return [{"id": r[0], "display_name": r[1]} for r in rows]
+
+
+def get_user_by_id_from_table(conn, role: str, _id: str):
+    """
+    Return a dict for the user row from the chosen table or None.
+    Uses proper column names for admin/employees schemas (firstname, lastname, password).
+    """
+    role = (role or "employee").lower()
+    table = "admin" if role == "admin" else "employees"
+
+    # We use COALESCE for active check (admin treated as active)
+    if role == "admin":
+        active_expr = "1 AS active"  # always active (or you can return NULL/True)
+    else:
+        active_expr = "COALESCE(is_active, TRUE) AS active"
+
+    sql = f"""
+    SELECT id,
+           firstname,
+           lastname,
+           email,
+           password AS password_hash,
+           {active_expr}
+    FROM {table}
+    WHERE id = ?
+    LIMIT 1
+    """
+    row = conn.execute(sql, [_id]).fetchone()
+    if not row:
+        return None
+
+    # try to map column names if conn.description is available
+    try:
+        cols = [d[0] for d in conn.description]
+        return dict(zip(cols, row))
+    except Exception:
+        # fallback mapping by position
+        return {
+            "id": row[0],
+            "firstname": row[1] if len(row) > 1 else None,
+            "lastname": row[2] if len(row) > 2 else None,
+            "email": row[3] if len(row) > 3 else None,
+            "password_hash": row[4] if len(row) > 4 else None,
+            "active": bool(row[5]) if len(row) > 5 else True
+        }
+
+def verify_password(stored_hash: str, plain_password: str) -> bool:
+    """
+    Verify a plain password against an Argon2 hashed password.
+    Returns True if password matches, False otherwise.
+
+    Note: stored_hash must be the Argon2 hash string (not raw/plaintext).
+    """
+    if not stored_hash or not plain_password:
+        return False
+    try:
+        return ph.verify(stored_hash, plain_password)
+    except VerifyMismatchError:
+        # password doesn't match
+        return False
+    except Exception:
+        # any other error (bad hash format, etc.) treat as non-match
+        return False
