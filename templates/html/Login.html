@@ -9,6 +9,7 @@
     <title>TIMESTOCK IMS - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
      <link rel="stylesheet" href="../css/Login.css?v=2">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
     <style>
      
     </style>
@@ -80,14 +81,34 @@
             <!-- Removed nested <form> (not allowed inside a form) -->
             <div id="loginFormElement">
                 <div class="input-group">
-                    <label class="input-label">Email Address</label>
+                    <label class="input-label">Select your name</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <!-- ✅ added name="email" -->
-                        <input type="email" class="input-field" id="loginEmail" 
-                               name="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="validation-message" id="emailValidation"></div>
+                        <i class="fas fa-user input-icon"></i>
+
+                        <!-- This is new again -->
+                        <!-- Role toggle (Admin / Employee) -->
+                        <div class="input-group role-toggle-group">
+                            <label class="input-label">Sign in as</label>
+                            <div class="input-wrapper role-toggle" style="display:flex; gap:8px;">
+                                <button type="button" id="roleEmployee" class="role-btn active" data-role="employee">Employee</button>
+                                <button type="button" id="roleAdmin" class="role-btn" data-role="admin">Admin</button>
+                            </div>
+                        </div>
+
+                        <!-- Hidden input to submit role -->
+                        <input type="hidden" id="selectedRole" name="role" value="employee">
+                        <!-- End of a newer code -->
+
+                        <!-- Searchable select (Choices.js will transform it). name="user_id" sends selected id. -->
+                        <select id="userSelect" name="user_id" class="input-field" required>
+                            <!-- choices will be injected dynamically -->
+                        </select>
+
+                        <!-- Optional hidden fallback email input (kept but hidden) - only used if user wants to enter email manually -->
+                        <input type="email" id="fallbackEmail" name="email" placeholder="Enter your email"
+                            style="display:none;" class="input-field" >
+                    </div>   
+                    <div class="validation-message" id="userSelectValidation"></div>
                 </div>
                 
                 <div class="input-group">
@@ -188,7 +209,8 @@
         </div>
     </div>
 
-  <script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <!-- <script>
         // Logo image fallback
         const logoImage = document.getElementById('companyLogo');
         const logoPlaceholder = document.getElementById('logoPlaceholder');
@@ -348,6 +370,125 @@
                 // Custom tab handling if needed
             }
         });
-    </script>
+    </script> -->
+<script>
+/* Helpers */
+function debounce(fn, wait){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+}
+
+/* Role-aware fetch */
+async function fetchUsersByRole(role='employee', q='') {
+  role = role || 'employee';
+  const qParam = q && q.length >= 2 ? `&q=${encodeURIComponent(q)}` : '';
+  try {
+    const res = await fetch(`/api/users/list?role=${encodeURIComponent(role)}${qParam}`);
+    if (!res.ok) return [];
+    return await res.json(); // expects [{id, display_name}, ...]
+  } catch (err) {
+    console.error("fetchUsersByRole failed", err);
+    return [];
+  }
+}
+
+/* Setup Choices (existing options kept) */
+const userSelectEl = document.getElementById('userSelect');
+const choices = new Choices(userSelectEl, {
+  searchEnabled: true,
+  shouldSort: false,
+  placeholder: true,
+  placeholderValue: 'Pick your name...',
+  searchPlaceholderValue: 'Type at least 2 characters...',
+  itemSelectText: '',
+  maxItemCount: 1,
+  removeItems: false,
+  noResultsText: 'No users found',
+  loadingText: 'Loading...'
+});
+
+/* Role toggle logic */
+const roleEmployeeBtn = document.getElementById('roleEmployee');
+const roleAdminBtn = document.getElementById('roleAdmin');
+const selectedRoleInput = document.getElementById('selectedRole');
+
+let currentRole = selectedRoleInput.value || 'employee';
+
+function setRole(role) {
+  currentRole = role;
+  selectedRoleInput.value = role;
+  if (role === 'admin') {
+    roleAdminBtn.classList.add('active');
+    roleEmployeeBtn.classList.remove('active');
+  } else {
+    roleEmployeeBtn.classList.add('active');
+    roleAdminBtn.classList.remove('active');
+  }
+  // clear previous selection and refresh choices for new role
+  choices.clearStore();
+  choices.removeActiveItems();
+  refreshChoicesForRole(role);
+}
+
+roleEmployeeBtn.addEventListener('click', () => setRole('employee'));
+roleAdminBtn.addEventListener('click', () => setRole('admin'));
+
+/* Populate initial choices for currentRole */
+async function refreshChoicesForRole(role) {
+  const users = await fetchUsersByRole(role, ""); // empty returns small list (limit) if server does
+  const mapped = users.map(u => ({ value: String(u.id), label: u.display_name }));
+  choices.setChoices(mapped, 'value', 'label', true);
+}
+
+(async () => { await refreshChoicesForRole(currentRole); })();
+
+/* Debounced search: call backend when user types (>=2 chars) */
+userSelectEl.addEventListener('search', debounce(async function(e) {
+  const q = e.detail.value || '';
+  if (q.length < 2) return;
+  const results = await fetchUsersByRole(currentRole, q);
+  const mapped = results.map(u => ({ value: String(u.id), label: u.display_name }));
+  choices.setChoices(mapped, 'value', 'label', true);
+}, 300));
+
+/* Ensure form submission still validates selection and password */
+(function setupLoginSubmission() {
+  const loginForm = document.querySelector('.sign-in-form');
+  const loginBtn = document.getElementById('loginBtn');
+
+  loginForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const selectedValue = userSelectEl.value;
+    const passwordInput = document.getElementById('loginPassword');
+
+    if (!selectedValue) {
+      document.getElementById('userSelectValidation').textContent = 'Please pick your name or enter email';
+      document.getElementById('fallbackEmail').style.display = 'block';
+      return;
+    } else {
+      document.getElementById('userSelectValidation').textContent = '';
+    }
+
+    if (!passwordInput.value.trim()) {
+      document.getElementById('passwordValidation').textContent = 'Password is required';
+      passwordInput.classList.add('error');
+      return;
+    } else {
+      document.getElementById('passwordValidation').textContent = '';
+      passwordInput.classList.remove('error');
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.classList.add('btn-loading');
+
+    try { localStorage.setItem('lastUserId', selectedValue); } catch (_) {}
+
+    // submit the form so /login receives user_id and role
+    loginForm.submit();
+  });
+})();
+</script>
+
+
 </body>
 </html>
