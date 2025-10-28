@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, EmailStr
+from datetime import datetime
 from typing import Optional, List
 
 # --- Product Category ---
@@ -218,3 +219,23 @@ class CreateAuditLog(BaseModel):
 class ReadAuditLog(BaseModel):
     id: str = Field(..., description="Audit Log record id")
     action_time: str = Field(..., description="ISO timestamp when action was recorded")
+
+
+# --- Base model (shared fields) ---
+class AdminBase(BaseModel):
+    firstname: str = Field(..., min_length=2, max_length=50)
+    lastname: str = Field(..., min_length=2, max_length=50)
+    email: EmailStr
+
+# --- Creation model (client input) ---
+class AdminCreate(AdminBase):
+    password: str = Field(..., min_length=8, max_length=128, description="Plaintext password to be hashed")
+
+# --- Response model (what you send back) ---
+class AdminRead(AdminBase):
+    id: str
+    date_created: datetime
+    last_login: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True  # allows returning ORM/dict-like objects directly

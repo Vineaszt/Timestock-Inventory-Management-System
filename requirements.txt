@@ -13,3 +13,4 @@ statsmodels
 reportlab
 python-jose
 argon2-cffi
+pydantic[email]
