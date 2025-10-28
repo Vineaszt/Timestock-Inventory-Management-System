@@ -5,6 +5,10 @@ from fastapi import HTTPException, Request
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from typing import List, Dict, Any, Optional
+import secrets
+import string
+import smtplib
+from email.mime.text import MIMEText
 import os
 
 MOTHERDUCK_TOKEN = os.getenv("MOTHERDUCK_TOKEN")
@@ -18,6 +22,28 @@ con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_
 
 ph = PasswordHasher()
 
+# Forgot Password
+
+def generate_new_password(length: int = 12) -> str:
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(length))
+
+def send_email(to_email: str, new_password: str):
+    """Sends the new password via email."""
+    sender_email = "time.stock.ims@gmail.com"
+    sender_password = "beox ukjg fpsj lrpq"
+
+    msg = MIMEText(
+        f"Hello,\n\nYour new password is: {new_password}\n\nPlease log in and change it immediately.\n\n- TimeStock Team"
+    )
+    msg["Subject"] = "Password Reset Request"
+    msg["From"] = sender_email
+    msg["To"] = to_email
+
+    # Example with Gmail SMTP (change for your provider)
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
 
 def log_audit(
     entity: str,
@@ -2467,7 +2493,34 @@ def get_employees():
         """).fetchdf()
 
 
-  
+def create_admin_account(firstname: str, lastname: str, email: str, password: str):
+    """
+    Creates an admin account in the 'admin' table with Argon2 password hashing.
+    If the email already exists, raises an exception.
+    Returns the created admin record including the auto-generated ID.
+    """
+    # Check if email already exists
+    result = con.execute("SELECT 1 FROM admin WHERE email = ?", [email]).fetchone()
+    if result:
+        raise ValueError(f"Admin with email '{email}' already exists.")
+
+    # Hash password using Argon2
+    hashed_password = ph.hash(password)
+
+    # Get current timestamp
+    date_created = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Insert and return the created row (DuckDB supports RETURNING)
+    created_admin = con.execute("""
+        INSERT INTO admin (firstname, lastname, email, password, date_created, last_login)
+        VALUES (?, ?, ?, ?, ?, NULL)
+        RETURNING id, firstname, lastname, email, date_created, last_login
+    """, [firstname, lastname, email, hashed_password, date_created]).fetchone()
+
+    print(f"✅ Admin account '{email}' created successfully.")
+    return created_admin
+
+
 def add_employee(data: dict, admin_id: Optional[str] = None, cur=None):
     """
     Add an employee. Requires admin_id for audit logging.
