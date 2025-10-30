@@ -83,7 +83,7 @@
                     <label class="input-label">Email Address</label>
                     <div class="input-wrapper">
                         <i class="fas fa-envelope input-icon"></i>
-                        <!-- ✅ added name="email" -->
+                        <!-- added name="email" -->
                         <input type="email" class="input-field" id="loginEmail" 
                                name="email" placeholder="Enter your email" required>
                     </div>
@@ -95,7 +95,7 @@
                     <div class="input-wrapper">
                         <i class="fas fa-lock input-icon"></i>
                         <div class="password-container">
-                            <!-- ✅ added name="password" -->
+                            <!-- added name="password" -->
                             <input type="password" class="input-field" id="loginPassword" 
                                    name="password" placeholder="Enter your password" required>
                             <button type="button" class="toggle-password" id="toggleLoginPassword">
@@ -327,7 +327,36 @@
         }
 
         handleFormSubmission('loginFormElement', 'loginBtn', 'Login successful! Redirecting...');
-        handleFormSubmission('forgotFormElement', 'forgotBtn', 'Reset link sent to your email!');
+
+
+        document.getElementById("forgotFormElement").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("forgotEmail").value;
+            const forgotBtn = document.getElementById("forgotBtn");
+            forgotBtn.disabled = true;
+            forgotBtn.querySelector("span").textContent = "Sending...";
+
+            try {
+                const formData = new FormData();
+                formData.append("email", email);
+
+                const res = await fetch("/api/forgot-password", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                alert(data.message);
+            } catch (err) {
+                alert("Something went wrong: " + err.message);
+            } finally {
+                forgotBtn.disabled = false;
+                forgotBtn.querySelector("span").textContent = "Send Reset Link";
+            }
+        });
+
+
 
         // Add smooth scroll behavior
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
