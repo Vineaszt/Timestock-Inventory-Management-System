@@ -1,4 +1,5 @@
-from typing import Optional
+# "List" was added here
+from typing import Optional, List 
 from fastapi import APIRouter, Form, HTTPException, Header, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -8,6 +9,9 @@ from datetime import datetime, timedelta
 
 from . import database
 import os
+
+# This is new
+from .app_schemas import UserListItem
 
 router = APIRouter()
 
@@ -43,7 +47,6 @@ async def login_user(
         token = create_access_token({"id": user["id"], "role": role})
         return {"access_token": token, "token_type": "bearer"}
 
-
 #MOBILE APP
 SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
@@ -76,3 +79,16 @@ def get_current_user(request: Request):
     if not user or "id" not in user:
         return None
     return user
+
+# This one is new:
+@router.get("/api/users/list", response_model=List[UserListItem])
+async def api_users_list(role: Optional[str] = "employee", q: Optional[str] = None, limit: int = 50):
+    conn = database.get_db_connection()
+    try:
+        rows = database.list_active_users_by_role(conn, role=role, q=q, limit=limit)
+        return [{"id": r["id"], "display_name": r["display_name"]} for r in rows]
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass

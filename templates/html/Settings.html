@@ -9,6 +9,7 @@
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
   <link rel="stylesheet" href="../css/Settings.css?v=6">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <style>
   @media screen and (max-width: 768px) {
 
@@ -358,8 +359,17 @@
             <div class="modal-body">
                 <div class="form-grid">
                     <div class="form-group full-width">
-                        <label for="target_employee_id">Employee ID</label>
-                        <input type="text" name="target_employee_id" placeholder="Employee ID" required>
+                      <label for="employeeInputPassword">Pick Employee</label>
+                      <div class="input-wrapper" style="position:relative;">
+                        <i class="material-symbols-sharp" style="margin-right:8px;opacity:0.6">person</i>
+                        <!-- visible input for autocomplete -->
+                        <input id="employeeInputPassword" type="text" autocomplete="off" placeholder="Type or click to pick an employee" />
+                        <!-- hidden input that will contain the chosen employee id (this is what backend expects) -->
+                        <input id="employeeHiddenPassword" type="hidden" name="target_employee_id" />
+                        <!-- container for dropdown -->
+                        <div id="employeeDropdownPassword" class="autocomplete-dropdown" style="display:none; position:absolute; left:0; right:0; z-index:9999;"></div>
+                      </div>
+                      <div class="validation-message" id="employeeSelectValidationPassword" style="color:#c0392b;font-size:0.9rem;margin-top:6px;"></div>
                     </div>
                     <div class="form-group full-width">
                         <label for="new_password">New Password</label>
@@ -460,11 +470,326 @@
   <div class="pagination" id="pagination"></div>
 </section>
 
-
 <!-- END OF TESTING HTML -->
 
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<script>
+/* ---------- Employee autocomplete for password modal (input + hidden + dropdown) ---------- */
+(function() {
+  // debounce helper
+  function debounce(fn, wait) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+  }
+
+  // fetch helper that calls backend list endpoint
+  async function fetchEmployeesForPassword(q = '', limit = 50) {
+    const qParam = (q && q.length >= 2) ? `&q=${encodeURIComponent(q)}` : '';
+    try {
+      const res = await fetch(`/api/users/list?role=employee${qParam}&limit=${limit}`, { credentials: 'include' });
+      if (!res.ok) return [];
+      const j = await res.json();
+      return Array.isArray(j) ? j : [];
+    } catch (err) {
+      console.error('fetchEmployeesForPassword error', err);
+      return [];
+    }
+  }
+
+  // element refs
+  const input = document.getElementById('employeeInputPassword');
+  const hidden = document.getElementById('employeeHiddenPassword'); // value should be employee id
+  const dropdown = document.getElementById('employeeDropdownPassword');
+  const validationEl = document.getElementById('employeeSelectValidationPassword');
+  const passwordModal = document.getElementById('passwordModal');
+
+  if (!input || !hidden || !dropdown) {
+    // missing required elements — nothing to do
+    return;
+  }
+
+  // build list markup
+  function buildList(items) {
+    dropdown.innerHTML = '';
+    if (!items || items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'autocomplete-empty';
+      empty.setAttribute('role', 'option');
+      empty.textContent = 'No employees found';
+      dropdown.appendChild(empty);
+      return;
+    }
+    for (const it of items) {
+      const d = document.createElement('div');
+      d.className = 'autocomplete-item';
+      d.setAttribute('role', 'option');
+      d.dataset.value = it.id !== undefined && it.id !== null ? String(it.id) : '';
+      // display_name fallback
+      const label = it.display_name || ((it.firstname || '') + ' ' + (it.lastname || '')).trim() || String(it.id || '');
+      d.textContent = label;
+      d.addEventListener('click', () => {
+        hidden.value = d.dataset.value;
+        input.value = d.textContent;
+        closeDropdown();
+        // clear any validation message
+        if (validationEl) validationEl.textContent = '';
+      });
+      dropdown.appendChild(d);
+    }
+  }
+
+  // show/close helpers
+  function openDropdown() {
+    dropdown.style.display = 'block';
+    dropdown.setAttribute('aria-expanded', 'true');
+  }
+  function closeDropdown() {
+    dropdown.style.display = 'none';
+    dropdown.setAttribute('aria-expanded', 'false');
+    // remove active classes
+    const active = dropdown.querySelector('.autocomplete-item.active');
+    if (active) active.classList.remove('active');
+  }
+
+  // Clear selection (input + hidden + list)
+  async function refreshShortList() {
+    try {
+      const list = await fetchEmployeesForPassword('', 25);
+      buildList(list);
+    } catch (e) {
+      console.error('refreshShortList error', e);
+      buildList([]);
+    }
+  }
+
+  // click outside closes
+  document.addEventListener('click', (ev) => {
+    if (!input.contains(ev.target) && !dropdown.contains(ev.target)) {
+      closeDropdown();
+    }
+  });
+
+  // Focus -> show a short subset
+  input.addEventListener('focus', async () => {
+    if (validationEl) validationEl.textContent = '';
+    await refreshShortList();
+    openDropdown();
+  });
+
+  // Click on input should open/refresh and keep caret
+  input.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    await refreshShortList();
+    openDropdown();
+    try { input.focus(); if (input.select) input.select(); } catch (e) {}
+  });
+
+  // typed search (debounced)
+  input.addEventListener('input', debounce(async () => {
+    const q = (input.value || '').trim();
+    if (q.length < 2) {
+      // show short list instead of calling search
+      await refreshShortList();
+      openDropdown();
+      return;
+    }
+    // searching indicator
+    buildList([{ id: '', display_name: 'Searching...' }]);
+    openDropdown();
+    const results = await fetchEmployeesForPassword(q, 50);
+    buildList(results);
+    openDropdown();
+  }, 250));
+
+  // keyboard support: arrow keys, enter, escape
+  input.addEventListener('keydown', (ev) => {
+    const items = Array.from(dropdown.querySelectorAll('.autocomplete-item'));
+    if (!items.length || dropdown.style.display === 'none') {
+      if (ev.key === 'ArrowDown') {
+        // open and populate if possible
+        ev.preventDefault();
+        refreshShortList().then(openDropdown).catch(() => openDropdown());
+      }
+      return;
+    }
+    const active = dropdown.querySelector('.autocomplete-item.active');
+    let idx = active ? items.indexOf(active) : -1;
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      if (idx < items.length - 1) {
+        if (active) active.classList.remove('active');
+        idx++;
+        items[idx].classList.add('active');
+        items[idx].scrollIntoView({ block: 'nearest' });
+      } else if (idx === -1 && items.length) {
+        items[0].classList.add('active');
+      }
+    } else if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (idx > 0) {
+        active.classList.remove('active');
+        idx--;
+        items[idx].classList.add('active');
+        items[idx].scrollIntoView({ block: 'nearest' });
+      }
+    } else if (ev.key === 'Enter') {
+      ev.preventDefault();
+      if (active) {
+        active.click();
+      } else if (items.length === 1) {
+        items[0].click();
+      }
+    } else if (ev.key === 'Escape') {
+      closeDropdown();
+    }
+  });
+
+  // If user edits text manually, clear hidden id to avoid mismatch
+  input.addEventListener('change', () => {
+    const match = hidden.value ? dropdown.querySelector(`[data-value="${hidden.value}"]`) : null;
+    if (hidden.value && (!match || input.value.trim() !== match.textContent)) {
+      hidden.value = '';
+    }
+  });
+
+  // When modal opens, clear selection and refresh choices
+  function onPasswordModalOpened() {
+    try {
+      hidden.value = '';
+      input.value = '';
+      if (validationEl) validationEl.textContent = '';
+    } catch (e) {}
+    // refresh list to display recent employees
+    refreshShortList();
+    closeDropdown(); // start closed and let user open
+  }
+
+  // Hook modal opening:
+  if (passwordModal) {
+    const obs = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.attributeName === 'style' || m.attributeName === 'class') {
+          const disp = window.getComputedStyle(passwordModal).display;
+          if (disp !== 'none') onPasswordModalOpened();
+        }
+      }
+    });
+    obs.observe(passwordModal, { attributes: true, attributeFilter: ['style', 'class'] });
+  } else {
+    // fallback: window focus event when modal likely opened (less reliable)
+    window.addEventListener('focus', () => {
+      if (passwordModal && window.getComputedStyle(passwordModal).display !== 'none') {
+        onPasswordModalOpened();
+      }
+    });
+  }
+
+  // initialize: prefetch a short list so dropdown is ready when user clicks
+  refreshShortList();
+
+})();
+</script>
+
+<script>
+/* ---------- Enhanced submit handler for password form (works with the above autocomplete) ---------- */
+(function() {
+  const passwordForm = document.getElementById('passwordForm');
+  if (!passwordForm) return;
+
+  const passwordBtn = passwordForm.querySelector('button[type="submit"]');
+  const empValidationEl = document.getElementById('employeeSelectValidationPassword');
+
+  async function postJson(url = '', data = {}) {
+    const res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch (e) {}
+    if (!res.ok) {
+      const detail = (json && (json.detail || json.message)) || text || res.statusText;
+      throw new Error(detail);
+    }
+    return json;
+  }
+
+  passwordForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+
+    // gather values (prefer hidden input produced by autocomplete)
+    const form = new FormData(passwordForm);
+    // Try hidden field first (from the new autocomplete)
+    const hiddenEl = document.getElementById('employeeHiddenPassword');
+    let target_employee_id = hiddenEl && hiddenEl.value ? hiddenEl.value : form.get('target_employee_id');
+    const new_password = (form.get('new_password') || '').toString();
+
+    // clear validation
+    if (empValidationEl) empValidationEl.textContent = '';
+    const pwdValEl = document.getElementById('passwordValidation');
+    if (pwdValEl) pwdValEl.textContent = '';
+
+    // client validation
+    let ok = true;
+    if (!target_employee_id) {
+      if (empValidationEl) empValidationEl.textContent = 'Please pick an employee from the list.';
+      else alert('Please pick an employee from the list.');
+      ok = false;
+    }
+    if (new_password.trim().length < 8) {
+      if (pwdValEl) pwdValEl.textContent = 'Password must be at least 8 characters.';
+      else alert('Password must be at least 8 characters.');
+      ok = false;
+    }
+    if (!ok) return;
+
+    // disable UI
+    if (passwordBtn) passwordBtn.disabled = true;
+    const origText = passwordBtn ? passwordBtn.textContent : '';
+    if (passwordBtn) passwordBtn.textContent = 'Changing…';
+
+    try {
+      const payload = { target_employee_id, new_password };
+      const res = await postJson('/api/settings/change-employee-password', payload);
+
+      alert(res && (res.message || res.msg) ? (res.message || res.msg) : 'Employee password changed successfully.');
+
+      // clear selection and reset form
+      try {
+        // clear the autocomplete input/hidden/dropdown if present
+        const input = document.getElementById('employeeInputPassword');
+        const hidden = document.getElementById('employeeHiddenPassword');
+        const dropdown = document.getElementById('employeeDropdownPassword');
+        if (hidden) hidden.value = '';
+        if (input) input.value = '';
+        if (dropdown) {
+          dropdown.innerHTML = '';
+          dropdown.style.display = 'none';
+        }
+      } catch (e) { /* ignore */ }
+
+      passwordForm.reset();
+      // close modal (assumes your existing closeModal helper)
+      try { closeModal && closeModal('passwordModal'); } catch (e) {}
+
+    } catch (err) {
+      console.error('Change password failed', err);
+      const msg = err && err.message ? err.message : 'Server error';
+      if (empValidationEl) empValidationEl.textContent = msg;
+      else alert(msg);
+    } finally {
+      if (passwordBtn) {
+        passwordBtn.disabled = false;
+        passwordBtn.textContent = origText;
+      }
+    }
+  });
+})();
+</script>
+
 
 <script>
   const notificationIcon = document.getElementById("notificationToggle");
@@ -531,18 +856,18 @@ async function postData(url = '', data = {}) {
   return response.json();
 }
 
-document.getElementById('passwordForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = Object.fromEntries(new FormData(e.target));
+// document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+//   e.preventDefault();
+//   const formData = Object.fromEntries(new FormData(e.target));
 
-  const payload = {
-    target_employee_id: formData.target_employee_id,
-    new_password: formData.new_password
-  };
+//   const payload = {
+//     target_employee_id: formData.target_employee_id,
+//     new_password: formData.new_password
+//   };
 
-  const res = await postData('/api/settings/change-employee-password', payload);
-  alert(JSON.stringify(res));
-});
+//   const res = await postData('/api/settings/change-employee-password', payload);
+//   alert(JSON.stringify(res));
+// });
 
 //Admin Account Creation
 async function createAdmin(event) {
@@ -949,11 +1274,11 @@ document.addEventListener('DOMContentLoaded', init);
         closeModal('statusModal');
     });
 
-    document.getElementById('passwordForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert('Employee password would be changed here');
-        closeModal('passwordModal');
-    });
+    // document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     alert('Employee password would be changed here');
+    //     closeModal('passwordModal');
+    // });
 
     document.getElementById('migrateBtn').addEventListener('click', function() {
         if (confirm('Are you sure you want to run the password migration? This cannot be undone.')) {
@@ -973,3 +1298,5 @@ document.addEventListener('DOMContentLoaded', init);
         });
     }
 </script>
+</body>
+</html>
