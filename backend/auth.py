@@ -22,50 +22,30 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "../templates/html"
 def login_page(request: Request):
     return templates.TemplateResponse("Login.html", {"request": request, "error": None})
 
-# This is modified
 @router.post("/login")
 async def login_user(
     request: Request,
-    user_id: Optional[str] = Form(None),
-    role: Optional[str] = Form("employee"),
-    email: Optional[str] = Form(None),
+    email: str = Form(...),
     password: str = Form(...),
     accept: Optional[str] = Header(default="application/json")
 ):
-    conn = database.get_db_connection()
-    try:
-        user = None
-        # If user_id provided (from dropdown), use role-aware lookup
-        if user_id:
-            user = database.get_user_by_id_from_table(conn, role=role, _id=user_id)
-        else:
-            # fallback to email-based auth (search both tables via your existing helper)
-            user = database.get_user_by_email(email)
-
-        if not user:
-            if "text/html" in accept:
-                return templates.TemplateResponse("Login.html", {"request": request, "error": "Invalid credentials"})
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        # verify password (assumes get_user_by_id_from_table returns 'password_hash' or compatible)
-        if not database.verify_password(user.get("password_hash") or user.get("password"), password):
-            if "text/html" in accept:
-                return templates.TemplateResponse("Login.html", {"request": request, "error": "Invalid credentials"})
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-
-        # login success: set session or produce token (keep your existing flow)
+    user = database.authenticate_user(email, password)
+    if not user:
         if "text/html" in accept:
-            request.session["user"] = {"id": user["id"], "role": role}
-            return RedirectResponse(url="/", status_code=HTTP_302_FOUND)
-        else:
-            token = create_access_token({"id": user["id"], "role": role})
-            return {"access_token": token, "token_type": "bearer"}
-    finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
-# Modification ends here
+            return templates.TemplateResponse("Login.html", {
+                "request": request,
+                "error": "Invalid email or password"
+            })
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    role = user["role"]
+
+    if "text/html" in accept:
+        request.session["user"] = {**user, "role": role}
+        return RedirectResponse(url="/", status_code=302)
+    else:
+        token = create_access_token({"id": user["id"], "role": role})
+        return {"access_token": token, "token_type": "bearer"}
 
 #MOBILE APP
 SECRET_KEY = "your-secret-key"
