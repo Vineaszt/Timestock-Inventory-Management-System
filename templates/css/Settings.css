@@ -777,8 +777,76 @@ input[type="range"] {
 /* Optional: focus outline */
 .vertical-range:focus { outline: none; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
 
+/* This is new */
 
+/* Add to your CSS file or inside a <style> in the head */
+.autocomplete-dropdown {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  max-height: 240px;
+  overflow-y: auto;
+  border-radius: 6px;
+  padding: 6px 0;
+}
+.autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background: #f0f6ff;
+}
+.autocomplete-empty {
+  padding: 10px 12px;
+  color: #666;
+  font-size: 0.95rem;
+}
 
+/* Put this near the end of your Settings.css or inside a <style> before </head> */
 
+/* Ensure input-wrapper stretches and uses flex so icon + input align */
+.modal-content .form-group .input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;                 /* space between icon and input */
+  width: 100%;
+  box-sizing: border-box;
+}
 
+/* Make visible inputs stretch and use the same height/padding/border box */
+.modal-content input[type="text"],
+.modal-content input[type="password"],
+.modal-content input[type="email"],
+.modal-content select,
+.modal-content .input-wrapper input {
+  width: 100%;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  padding: 10px 12px;       /* consistent padding */
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.12);
+  height: 40px;             /* consistent height */
+  line-height: 1.2;
+}
 
+/* Make the autocomplete dropdown align exactly with the input */
+#employeeDropdownPassword {
+  left: 0;
+  right: 0;
+  width: auto;              /* let left/right define width */
+  box-sizing: border-box;
+}
+
+/* If the icon is inside input-wrapper, prevent it from shrinking too much */
+.modal-content .input-wrapper i,
+.modal-content .input-wrapper .material-symbols-sharp {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
