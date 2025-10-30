@@ -1,5 +1,6 @@
 from typing import List, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Header,Request
+from argon2 import PasswordHasher
+from fastapi import APIRouter, Depends, HTTPException, Header,Request,Form
 from fastapi.responses import JSONResponse, FileResponse
 from tempfile import NamedTemporaryFile
 from datetime import datetime, timedelta
@@ -14,11 +15,13 @@ from .app_schemas import (
     MaterialCreate, MaterialUpdate, OrderStatusUpdate, EmployeeCreate,
     CustomerCreate, CustomerUpdate, ReceiptRequest, QuotationRequest,
     ProductCreate, ProductUpdate,StockTransactionCreate,ProductMaterialBulkCreate,
-    SupplierCreate, SupplierUpdate, ProductMaterialCreate, OrderTransactionCreate
+    SupplierCreate, SupplierUpdate, ProductMaterialCreate, OrderTransactionCreate,
+    AdminCreate, AdminRead
 )
 
 from backend import database, receipt, graphs, analytics
 router = APIRouter()
+ph = PasswordHasher()
 
 
 @router.put("/products/update") 
@@ -709,6 +712,33 @@ def generate_report_pdf_endpoint(year: int, month: int = None, user: dict = Depe
 
 
 # ------------ SETTINGS -------------
+@router.post("/admin/create", response_model=AdminRead)
+def create_admin(admin: AdminCreate):
+    """
+    API endpoint that uses the create_admin_account() helper function
+    to add a new admin.
+    """
+    try:
+        created_admin = database.create_admin_account(
+            firstname=admin.firstname,
+            lastname=admin.lastname,
+            email=admin.email,
+            password=admin.password
+        )
+
+        return AdminRead(
+            id=created_admin[0],
+            firstname=created_admin[1],
+            lastname=created_admin[2],
+            email=created_admin[3],
+            date_created=created_admin[4],
+            last_login=created_admin[5]
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create admin: {str(e)}")
 
 @router.post("/settings/add-employees", status_code=201) #  
 def api_add_employee(
@@ -826,3 +856,66 @@ def fetch_audit_logs(limit: int = 100, offset: int = 0, request: Request = None)
 def api_migrate_password_hashes():
     return database.migrate_plaintext_passwords_to_hash()
 
+# Forgot Password
+
+@router.post("/change-password")
+async def change_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...)
+):
+    # Get logged-in user (must be stored in session from login)
+    session_user = request.session.get("user")
+
+    if not session_user:
+        raise HTTPException(status_code=401, detail="Not logged in")
+
+    user_id = session_user["id"]
+
+    # Fetch current password hash from DB
+    user_record = database.con.execute("SELECT password FROM admin WHERE id = ?", [user_id]).fetchone()
+
+    if not user_record:
+        return JSONResponse({"success": False, "message": "User not found"}, status_code=404)
+
+    stored_hash = user_record[0]
+
+    # Verify current password
+    try:
+        ph.verify(stored_hash, current_password)
+    except Exception:
+        return JSONResponse({"success": False, "message": "Incorrect current password"}, status_code=400)
+
+    # Hash the new password
+    new_hashed = ph.hash(new_password)
+
+    # Update DB
+    database.con.execute("UPDATE admin SET password = ? WHERE id = ?", [new_hashed, user_id])
+
+    return JSONResponse({"success": True, "message": "Password updated successfully"})
+
+@router.post("/forgot-password")
+async def forgot_password(request: Request):
+    form = await request.form()
+    email = form.get("email")
+
+    # Check if email exists
+    user = database.con.execute("SELECT id FROM admin WHERE email = ?", [email]).fetchone()
+
+    if not user:
+        return JSONResponse({"success": False, "message": "Email not found"}, status_code=404)
+
+    # Generate and hash new password
+    new_password = database.generate_new_password()
+    hashed_password = ph.hash(new_password)
+
+    # Update the password in the database
+    database.con.execute("UPDATE admin SET password = ? WHERE email = ?", [hashed_password, email])
+
+    # Send the email
+    try:
+        database.send_email(email, new_password)
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"Failed to send email: {e}"}, status_code=500)
+
+    return JSONResponse({"success": True, "message": "New password sent to your email"})

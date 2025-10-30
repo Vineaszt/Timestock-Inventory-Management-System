@@ -193,11 +193,90 @@
   </div>
 </div>
     <div class="demo-buttons">
+        <button class="demo-btn" onclick="openModal('addAdminModal')">Add Admin</button>
         <button class="demo-btn" onclick="openModal('addEmployeeModal')">Add Employee</button>
         <button class="demo-btn" onclick="openModal('statusModal')">Change Status</button>
-        <button class="demo-btn" onclick="openModal('passwordModal')">Change Password</button>
+        <button class="demo-btn" onclick="openModal('passwordModal')">Change Employee Password</button>
+        <button class="demo-btn" onclick="openModal('changeAdminPasswordModal')">Change Your Password</button>
         <!-- <button class="demo-btn" onclick="openModal('migrateModal')">Migration</button> -->
     </div>
+
+
+<!-- Change Admin Password Modal -->
+<div id="changeAdminPasswordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Admin Password</h2>
+            <span class="close" onclick="closeModal('changeAdminPasswordModal')">&times;</span>
+        </div>
+
+        <form id="changeAdminPasswordForm" onsubmit="changeAdminPassword(event)">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="current_admin_password">Current Password</label>
+                        <input type="password" id="current_admin_password" name="current_password" placeholder="Enter current password" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="new_admin_password">New Password</label>
+                        <input type="password" id="new_admin_password" name="new_password" placeholder="Enter new password" required minlength="8">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="confirm_admin_password">Confirm New Password</label>
+                        <input type="password" id="confirm_admin_password" name="confirm_password" placeholder="Confirm new password" required minlength="8">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit">Update Password</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Admin Modal -->
+<div id="addAdminModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Admin Account</h2>
+            <span class="close" onclick="closeModal('addAdminModal')">&times;</span>
+        </div>
+
+        <form id="addAdminForm" onsubmit="createAdmin(event)">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="admin_firstname">First Name</label>
+                        <input type="text" id="admin_firstname" name="firstname" placeholder="First Name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin_lastname">Last Name</label>
+                        <input type="text" id="admin_lastname" name="lastname" placeholder="Last Name" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="admin_email">Email</label>
+                        <input type="email" id="admin_email" name="email" placeholder="Email Address" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="admin_password">Password</label>
+                        <input type="password" id="admin_password" name="password" placeholder="Password" required minlength="8">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit">Create Admin</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 
 <!-- Add Employee Modal -->
 <div id="addEmployeeModal" class="modal">
@@ -789,6 +868,76 @@ async function postData(url = '', data = {}) {
 //   const res = await postData('/api/settings/change-employee-password', payload);
 //   alert(JSON.stringify(res));
 // });
+
+//Admin Account Creation
+async function createAdmin(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('addAdminForm');
+    const data = {
+        firstname: form.firstname.value,
+        lastname: form.lastname.value,
+        email: form.email.value,
+        password: form.password.value
+    };
+
+    try {
+        const response = await fetch('/api/admin/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            alert(`Error: ${err.detail || response.statusText}`);
+            return;
+        }
+
+        alert('✅ Admin account created successfully!');
+        closeModal('addAdminModal');
+        form.reset();
+
+    } catch (error) {
+        console.error(error);
+        alert('An unexpected error occurred.');
+    }
+}
+
+
+async function changeAdminPassword(event) {
+    event.preventDefault();
+
+    const currentPassword = document.getElementById('current_admin_password').value;
+    const newPassword = document.getElementById('new_admin_password').value;
+    const confirmPassword = document.getElementById('confirm_admin_password').value;
+
+    if (newPassword !== confirmPassword) {
+        alert("New passwords do not match!");
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append("current_password", currentPassword);
+        formData.append("new_password", newPassword);
+
+        const response = await fetch("/api/change-password", {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+        alert(result.message);
+
+        if (result.success) {
+            closeModal('changeAdminPasswordModal');
+            document.getElementById('changeAdminPasswordForm').reset();
+        }
+    } catch (error) {
+        alert("An error occurred: " + error.message);
+    }
+}
 
 // Migrate Hashes
 document.getElementById('migrateBtn').addEventListener('click', async () => {
