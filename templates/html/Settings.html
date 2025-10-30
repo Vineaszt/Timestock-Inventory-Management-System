@@ -11,6 +11,33 @@
   <link rel="stylesheet" href="../css/Settings.css?v=6">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <style>
+        /* Style disabled buttons to look visually distinct */
+    .demo-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #ccc;
+        color: #666;
+        border-color: #aaa;
+    }
+
+    .demo-btn[title] {
+        position: relative;
+    }
+
+    /* Optional: small tooltip effect */
+    .demo-btn[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }  
   @media screen and (max-width: 768px) {
 
   /* Container collapse */
@@ -192,14 +219,15 @@
         {% include "profile.html" %}
   </div>
 </div>
-    <div class="demo-buttons">
-        <button class="demo-btn" onclick="openModal('addAdminModal')">Add Admin</button>
-        <button class="demo-btn" onclick="openModal('addEmployeeModal')">Add Employee</button>
-        <button class="demo-btn" onclick="openModal('statusModal')">Change Status</button>
-        <button class="demo-btn" onclick="openModal('passwordModal')">Change Employee Password</button>
-        <button class="demo-btn" onclick="openModal('changeAdminPasswordModal')">Change Your Password</button>
-        <!-- <button class="demo-btn" onclick="openModal('migrateModal')">Migration</button> -->
-    </div>
+<div class="demo-buttons" id="adminButtons">
+    <button class="demo-btn" onclick="openModal('addAdminModal')">Add Admin</button>
+    <button class="demo-btn" onclick="openModal('addEmployeeModal')">Add Employee</button>
+    <!-- <button class="demo-btn" onclick="openModal('statusModal')">Change Status</button> -->
+    <button class="demo-btn" onclick="openModal('passwordModal')">Change Employee Password</button>
+    <button class="demo-btn" onclick="openModal('changeAdminPasswordModal')">Change Your Password</button>
+    <!-- <button class="demo-btn" onclick="openModal('migrateModal')">Migration</button> -->
+</div>
+
 
 
 <!-- Change Admin Password Modal -->
@@ -1136,6 +1164,18 @@ const paginationDiv = document.getElementById('pagination');
 async function init() {
   try {
     const resp = await fetch(`${API}?limit=1000`); // fetch many; adapt if you want server pagination
+
+    // Admin/permission check only — if backend says not allowed, show message and stop
+    if (resp.status === 401 || resp.status === 403) {
+      auditBody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align:center; color:#b00; font-weight:600;">
+            🚫 You do not have permission to view audit logs.
+          </td>
+        </tr>`;
+      return;
+    }
+
     if (!resp.ok) throw new Error('Failed to fetch audit logs: ' + resp.status);
     const json = await resp.json();
     logs = (json.logs || []).sort((a,b) => {
@@ -1151,6 +1191,7 @@ async function init() {
     auditBody.innerHTML = `<tr><td colspan="7">Error loading logs: ${err.message}</td></tr>`;
   }
 }
+
 
 function renderPage(page) {
   currentPage = Math.max(1, Math.min(page, Math.ceil(logs.length / PAGE_SIZE) || 1));
@@ -1298,5 +1339,35 @@ document.addEventListener('DOMContentLoaded', init);
         });
     }
 </script>
+
+<script>
+async function checkUserRole() {
+    try {
+        const res = await fetch("/api/whoami", { credentials: "include" });
+        if (!res.ok) throw new Error("Not logged in");
+
+        const user = await res.json();
+        const buttons = document.querySelectorAll("#adminButtons .demo-btn");
+
+        if (user.role !== "admin") {
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.title = "Only admins can use this feature";
+            });
+        }
+
+    } catch (err) {
+        console.warn("Error checking role:", err);
+        // If user not logged in, also disable buttons
+        document.querySelectorAll("#adminButtons .demo-btn").forEach(btn => {
+            btn.disabled = true;
+            btn.title = "Please log in as an admin to use this feature";
+        });
+    }
+}
+
+document.addEventListener("DOMContentLoaded", checkUserRole);
+</script>
+
 </body>
 </html>
