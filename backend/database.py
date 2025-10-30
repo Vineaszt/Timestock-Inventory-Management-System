@@ -22,6 +22,9 @@ con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_
 
 ph = PasswordHasher()
 
+def get_db_connection():
+    con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
+    return con
 # Forgot Password
 
 def generate_new_password(length: int = 12) -> str:
@@ -52,49 +55,113 @@ def log_audit(
     details: Optional[str] = None,
     admin_id: Optional[str] = None,
     employee_id: Optional[str] = None,
-    cur=None
+    cur: Optional[object] = None,
+    cur_or_conn: Optional[object] = None
 ):
     if bool(admin_id) == bool(employee_id):
         raise ValueError("Provide exactly one of admin_id or employee_id")
 
-    conn_used = None
-    own_cursor = False
+    created_own_conn = False   # we created the connection in this function (and must commit/close)
+    conn = None
+    exec_obj = None
 
-    if cur is None:
+    # Determine executor preference: explicit cur_or_conn > cur
+    executor = cur_or_conn if cur_or_conn is not None else cur
+
+    if executor is None:
+        # No executor passed: try module-level 'con' first (preserve older behavior)
         try:
-            conn_used = con
+            conn = con  # if defined in module
+            exec_obj = conn
+            created_own_conn = True  # preserve older behavior where log would commit module-level con
         except NameError:
-            raise RuntimeError("Database connection `con` is not defined in this module.")
-        cur = conn_used.cursor()
-        own_cursor = True
+            # Try to create short-lived connection via helper if available
+            try:
+                conn = get_db_connection()
+                exec_obj = conn
+                created_own_conn = True
+            except Exception:
+                raise RuntimeError("No DB connection available: pass cur or cur_or_conn or define module-level `con` or provide get_db_connection().")
     else:
-        if hasattr(cur, "cursor") and not hasattr(cur, "execute"):
-            conn_used = cur
-            cur = conn_used.cursor()
-            own_cursor = True
+        # An executor was provided by caller
+        # If it supports .execute, use it directly (works for connection or cursor)
+        if hasattr(executor, "execute"):
+            exec_obj = executor
+            # If executor is a connection-like object (has commit), keep conn reference but do NOT commit here
+            if hasattr(executor, "commit"):
+                conn = executor
+            # created_own_conn remains False because caller provided executor
+        # If executor exposes cursor(), assume it's a connection and create a cursor from it
+        elif hasattr(executor, "cursor"):
+            conn = executor
+            try:
+                exec_obj = conn.cursor()
+            except Exception:
+                # Fallback: try using the executor directly
+                if hasattr(executor, "execute"):
+                    exec_obj = executor
+                else:
+                    raise ValueError("Passed object cannot be used as connection or cursor")
         else:
-            conn_used = None
-            own_cursor = False
+            raise ValueError("cur/cur_or_conn must be a connection or cursor-like object")
 
-    if admin_id:
-        row = cur.execute("SELECT 1 FROM admin WHERE id = ?", (admin_id,)).fetchone()
-        if not row:
-            raise ValueError("admin_id not found")
-    if employee_id:
-        row = cur.execute("SELECT 1 FROM employees WHERE id = ?", (employee_id,)).fetchone()
-        if not row:
-            raise ValueError("employee_id not found")
+    # At this point, exec_obj is something with execute(...) method
+    try:
+        # Validate referenced ID exists
+        if admin_id:
+            row = exec_obj.execute("SELECT 1 FROM admin WHERE id = ?", (admin_id,)).fetchone()
+            if not row:
+                # if we created our own conn, close it before raising
+                if created_own_conn and conn is not None:
+                    try: conn.close()
+                    except Exception: pass
+                raise ValueError("admin_id not found")
+        if employee_id:
+            row = exec_obj.execute("SELECT 1 FROM employees WHERE id = ?", (employee_id,)).fetchone()
+            if not row:
+                if created_own_conn and conn is not None:
+                    try: conn.close()
+                    except Exception: pass
+                raise ValueError("employee_id not found")
 
-    cur.execute(
-        """
-        INSERT INTO auditlogs (action_time, admin_id, employee_id, entity, entity_id, action, details)
-        VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)
-        """,
-        (admin_id, employee_id, entity, entity_id, action, details)
-    )
+        # Insert audit record
+        exec_obj.execute(
+            """
+            INSERT INTO auditlogs (action_time, admin_id, employee_id, entity, entity_id, action, details)
+            VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)
+            """,
+            (admin_id, employee_id, entity, entity_id, action, details)
+        )
 
-    if own_cursor and conn_used is not None:
-        conn_used.commit()
+        # If we opened the connection in this function, commit & close it
+        if created_own_conn and conn is not None:
+            try:
+                conn.commit()
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+    except Exception:
+        # If we created the connection here, ensure we rollback & close on errors
+        if created_own_conn and conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            try:
+                conn.close()
+            except Exception:
+                pass
+        raise
+    finally:
+
+        if created_own_conn and conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # Product_materials
@@ -2676,51 +2743,71 @@ def update_account_status(id: str, is_active: bool, admin_id: Optional[str] = No
 
 # THIS IS DONE
 def change_employee_password(
-        admin_id: str,
-        target_employee_id: str,
-        new_password: str,
-        cur=None
-    ) -> dict:
+    admin_id: str,
+    target_employee_id: str,
+    new_password: str,
+    cur=None
+) -> dict:
     """
     Admin changes an employee password.
-    Does NOT log password content. Logs that admin performed a password change.
+    - Verifies admin exists.
+    - Verifies target employee exists BEFORE hashing.
+    - Hashes new password and updates employees.password.
+    - Writes an audit log (does NOT include password/hash).
+    - Uses the same DB connection for update + audit so they are atomic.
     """
     if admin_id is None:
         raise ValueError("admin_id is required for audit logging (admin only)")
 
     conn_used = None
-    own_cursor = False
+    own_conn = False
+    # Determine executor (keep compatibility with your previous pattern)
     if cur is None:
         try:
+            # use module-level connection `con` if present
             conn_used = con
         except NameError:
             raise RuntimeError("Database connection `con` is not defined in this module.")
-        cur = conn_used.cursor()
-        own_cursor = True
+        exec_obj = conn_used  # DuckDB connection supports .execute()
+        own_conn = True
     else:
-        if hasattr(cur, "cursor") and not hasattr(cur, "execute"):
+        # If caller passed a connection-like object with .execute(), use it directly
+        if hasattr(cur, "execute"):
             conn_used = cur
-            cur = conn_used.cursor()
-            own_cursor = True
+            exec_obj = conn_used
+        # else, caller passed something else (cursor-like); attempt to use it
+        elif hasattr(cur, "cursor"):
+            conn_used = cur
+            exec_obj = conn_used.cursor()
+            own_conn = True
+        else:
+            raise ValueError("cur must be a connection or cursor-like object")
 
-    ph = PasswordHasher()
-
-    # verify admin exists
-    admin_row = cur.execute("SELECT id FROM admin WHERE id = ?", (admin_id,)).fetchone()
+    # Verify admin exists
+    admin_row = exec_obj.execute("SELECT 1 FROM admin WHERE id = ?", (admin_id,)).fetchone()
     if not admin_row:
+        # do not commit anything here; caller will handle exceptions
         raise HTTPException(status_code=404, detail="Admin account not found.")
 
-    new_password = new_password.strip()
+    # Basic password validation (trim and length)
+    new_password = (new_password or "").strip()
     if len(new_password) < 8:
         return {"success": False, "message": "New password must be at least 8 characters."}
 
+    # Verify target employee exists BEFORE hashing
+    target_row = exec_obj.execute("SELECT 1 FROM employees WHERE id = ?", (target_employee_id,)).fetchone()
+    if not target_row:
+        return {"success": False, "message": "Target user not found."}
+
+    # Hash password (reuse module-level hasher _ph)
     try:
         new_hash = ph.hash(new_password)
     except Exception:
         raise HTTPException(status_code=500, detail="Error hashing new password.")
 
     try:
-        res = cur.execute(
+        # Perform update
+        exec_obj.execute(
             """
             UPDATE employees
             SET password = ?,
@@ -2730,35 +2817,50 @@ def change_employee_password(
             (new_hash, target_employee_id)
         )
 
-        affected = getattr(res, "rowcount", None)
-        if affected is None:
-            # best-effort: check existence
-            row = cur.execute("SELECT 1 FROM employees WHERE id = ?", (target_employee_id,)).fetchone()
-            if not row:
-                return {"success": False, "message": "Target user not found."}
-            affected = 1
+        # Audit: do NOT include password or hash.
+        details = f"Admin {admin_id} changed password for employee {target_employee_id}."
+        # Prefer to pass the connection so audit + update are atomic
+        try:
+            log_audit(
+                entity="employees",
+                entity_id=str(target_employee_id),
+                action="password_change",
+                details=details,
+                admin_id=admin_id,
+                cur_or_conn=conn_used  # use cur_or_conn for newer signature; backward-compatible too
+            )
+        except TypeError:
+            # fallback if your log_audit hasn't been updated yet; use legacy param name
+            log_audit(
+                entity="employees",
+                entity_id=str(target_employee_id),
+                action="password_change",
+                details=details,
+                admin_id=admin_id,
+                cur=exec_obj
+            )
 
-        if affected == 0:
-            return {"success": False, "message": "Target user not found."}
+        # commit if we opened the connection here
+        if own_conn and conn_used is not None:
+            try:
+                conn_used.commit()
+            except Exception:
+                # commit error -> rollback and re-raise
+                try:
+                    conn_used.rollback()
+                except Exception:
+                    pass
+                raise
 
-        # Audit: do NOT include password or hash
-        details = f"Admin {admin_id} changed password for employee {target_employee_id} (no password stored in audit)."
-        log_audit(
-            entity="employees",
-            entity_id=str(target_employee_id),
-            action="password_change",
-            details=details,
-            admin_id=admin_id,
-            cur=cur
-        )
-
-        if own_cursor and conn_used is not None:
-            conn_used.commit()
         return {"success": True, "message": "Employee password changed successfully."}
     except Exception:
-        if own_cursor and conn_used is not None:
-            conn_used.rollback()
+        if own_conn and conn_used is not None:
+            try:
+                conn_used.rollback()
+            except Exception:
+                pass
         raise
+
 
 def get_current_admin(request: Request):
     user = request.session.get("user")
@@ -2971,3 +3073,117 @@ def migrate_plaintext_passwords_to_hash():
         "updated_employee_passwords": updated["employees"]
     }
 
+#====================================================================================
+# This part is new:
+#====================================================================================
+# Role-aware list for the login dropdown
+def list_active_users_by_role(conn, role: str = "employee", q: str = None, limit: int = 50):
+    """
+    Return list[dict] like: [{'id': 'EMP001', 'display_name': 'Juan Dela Cruz'}, ...]
+    Works with your DuckDB admin and employees tables using their real column names.
+    """
+    role = (role or "employee").lower()
+    # choose table and active column semantics
+    if role == "admin":
+        table = "admin"
+        # admin table has no is_active; treat rows as active by default
+        active_pred = "1=1"
+    else:
+        table = "employees"
+        # employees use is_active boolean column
+        active_pred = "COALESCE(is_active, TRUE) = TRUE"
+
+    if q and len(q) >= 2:
+        pat = f"%{q}%"
+        sql = f"""
+        SELECT id,
+               firstname || ' ' || lastname AS display_name
+        FROM {table}
+        WHERE {active_pred}
+          AND (
+            LOWER(firstname) LIKE LOWER(?)
+            OR LOWER(lastname) LIKE LOWER(?)
+            OR LOWER(firstname || ' ' || lastname) LIKE LOWER(?)
+          )
+        LIMIT ?
+        """
+        params = [pat, pat, pat, limit]
+    else:
+        sql = f"""
+        SELECT id,
+               firstname || ' ' || lastname AS display_name
+        FROM {table}
+        WHERE {active_pred}
+        LIMIT ?
+        """
+        params = [limit]
+
+    try:
+        df = conn.execute(sql, params).fetchdf()
+        return df.to_dict(orient="records")
+    except Exception:
+        rows = conn.execute(sql, params).fetchall()
+        return [{"id": r[0], "display_name": r[1]} for r in rows]
+
+
+def get_user_by_id_from_table(conn, role: str, _id: str):
+    """
+    Return a dict for the user row from the chosen table or None.
+    Uses proper column names for admin/employees schemas (firstname, lastname, password).
+    """
+    role = (role or "employee").lower()
+    table = "admin" if role == "admin" else "employees"
+
+    # We use COALESCE for active check (admin treated as active)
+    if role == "admin":
+        active_expr = "1 AS active"  # always active (or you can return NULL/True)
+    else:
+        active_expr = "COALESCE(is_active, TRUE) AS active"
+
+    sql = f"""
+    SELECT id,
+           firstname,
+           lastname,
+           email,
+           password AS password_hash,
+           {active_expr}
+    FROM {table}
+    WHERE id = ?
+    LIMIT 1
+    """
+    row = conn.execute(sql, [_id]).fetchone()
+    if not row:
+        return None
+
+    # try to map column names if conn.description is available
+    try:
+        cols = [d[0] for d in conn.description]
+        return dict(zip(cols, row))
+    except Exception:
+        # fallback mapping by position
+        return {
+            "id": row[0],
+            "firstname": row[1] if len(row) > 1 else None,
+            "lastname": row[2] if len(row) > 2 else None,
+            "email": row[3] if len(row) > 3 else None,
+            "password_hash": row[4] if len(row) > 4 else None,
+            "active": bool(row[5]) if len(row) > 5 else True
+        }
+
+def verify_password(stored_hash: str, plain_password: str) -> bool:
+    """
+    Verify a plain password against an Argon2 hashed password.
+    Returns True if password matches, False otherwise.
+
+    Note: stored_hash must be the Argon2 hash string (not raw/plaintext).
+    """
+    if not stored_hash or not plain_password:
+        return False
+    try:
+        return ph.verify(stored_hash, plain_password)
+    except VerifyMismatchError:
+        # password doesn't match
+        return False
+    except Exception:
+        # any other error (bad hash format, etc.) treat as non-match
+        return False
