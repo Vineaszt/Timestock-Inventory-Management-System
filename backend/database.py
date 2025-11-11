@@ -5,6 +5,8 @@ from fastapi import HTTPException, Request
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from typing import List, Dict, Any, Optional
+import requests
+from email.mime.text import MIMEText
 import secrets
 import string
 import smtplib
@@ -51,6 +53,7 @@ def get_db_connection():
     con = duckdb.connect(DB_PATH)
     # con = duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN})
     return con
+
 # Forgot Password
 
 def generate_new_password(length: int = 12) -> str:
@@ -58,21 +61,43 @@ def generate_new_password(length: int = 12) -> str:
     return ''.join(secrets.choice(chars) for _ in range(length))
 
 def send_email(to_email: str, new_password: str):
-    """Sends the new password via email."""
-    sender_email = "time.stock.ims@gmail.com"
-    sender_password = "beox ukjg fpsj lrpq"
+    """Sends the new password via Resend API."""
+    api_key = os.getenv("RESEND_API_KEY")
 
-    msg = MIMEText(
-        f"Hello,\n\nYour new password is: {new_password}\n\nPlease log in and change it immediately.\n\n- TimeStock Team"
-    )
-    msg["Subject"] = "Password Reset Request"
-    msg["From"] = sender_email
-    msg["To"] = to_email
+    if not api_key:
+        raise ValueError("Missing RESEND_API_KEY environment variable")
 
-    # Example with Gmail SMTP (change for your provider)
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
+    data = {
+        "from": "TimeStock <noreply@resend.dev>",  # or your verified domain later
+        "to": [to_email],
+        "subject": "Password Reset Request",
+        "html": f"""
+            <p>Hello,</p>
+            <p>Your new password is: <strong>{new_password}</strong></p>
+            <p>Please log in and change it immediately.</p>
+            <p>- TimeStock Team</p>
+        """
+    }
+
+    try:
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=data,
+            timeout=10  # optional, prevents hanging
+        )
+
+        if response.status_code != 200:
+            raise Exception(f"Resend API error: {response.status_code} - {response.text}")
+
+        print("✅ Email sent successfully")
+
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+        raise
 
 def log_audit(
     entity: str,
