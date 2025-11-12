@@ -12,15 +12,15 @@ import json
 import shutil
 import os
 
-REPO_DB_PATH = "backend/db_timestock"
+REPO_DB_PATH = "backend/db_timestock1"
 
 # If running locally, use a local file
 if os.environ.get("RAILWAY") == "1":
     # Production (Railway) path: the mounted volume
-    DB_PATH = "/data/db_timestock"
+    DB_PATH = "/data/db_timestock1"
 else:
     # Local path
-    DB_PATH = "backend/db_timestock"
+    DB_PATH = "backend/db_timestock1"
 
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
@@ -269,7 +269,7 @@ def get_fastest_moving_materials_chart():
     LIMIT 10;
     """
 
-    with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect(DB_PATH) as conn:
     # with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
@@ -363,7 +363,7 @@ def get_reorder_point_chart(return_df=False):
         ORDER BY reorder_status DESC, item_name;
     """
 
-    with duckdb.connect("backend/db_timestock") as conn:
+    with duckdb.connect(DB_PATH) as conn:
     # with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as conn:
         df = conn.execute(query).fetchdf()
 
@@ -983,7 +983,7 @@ def generate_moving_average_recommendations(df: pd.DataFrame) -> list:
 
 
 def generate_sales_moving_average_report(df: pd.DataFrame) -> str:
-    
+
     if df.empty or 'total_sales' not in df.columns:
         return "<p>No sales data available for report.</p>"
     # Drop NA to avoid issues with early months having no MA
@@ -1231,7 +1231,7 @@ def get_stl_text_report_for_month(year: int, month: int):
     }
 
 def get_sales_moving_average_text_report(year: int, month: int | None = None):
-    with duckdb.connect('backend/db_timestock') as con:
+    with duckdb.connect(DB_PATH) as con:
     # with duckdb.connect('md:mdb_timestock', config={"motherduck_token": MOTHERDUCK_TOKEN}) as con:
         # --- get full dataset (no filtering here) ---
         df = con.execute("""
