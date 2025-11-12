@@ -79,6 +79,9 @@ def get_graph_html(period='month'):
     df = df_orders.merge(df_sales, on='period', how='outer').merge(df_revenue, on='period', how='outer')
     df = df.sort_values('period')
 
+    if df.empty or df['total_revenue'].sum() == 0:
+        return "<p>No sales data available.</p>", "<p>No data to report.</p>"
+    
     # Plotting
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -118,6 +121,9 @@ def generate_chart_report(df):
     total_sales = df['total_sales'].sum()
     avg_revenue = df['total_revenue'].mean()
 
+    if df.empty or df['total_revenue'].sum() == 0:
+        return "<p>No valid data to summarize.</p>"
+    
     return f"""
     <strong>Summary Report:</strong><br>
     📅 Highest Revenue Month: <b>{max_month}</b><br>
@@ -166,7 +172,8 @@ def get_turnover_combined_graph():
         ORDER BY label;
     """).fetchdf()
 
-    
+    if df.empty or (df[['cogs','avg_inventory']].sum().sum() == 0):
+        return "<p>No turnover data available.</p>", None, "<p>No data to summarize.</p>"
 
     fig = go.Figure()
 
@@ -223,6 +230,9 @@ def get_turnover_combined_graph():
     return fig.to_html(full_html=False, config={'responsive': True}), df, summary_html
 
 def generate_turnover_summary(df):
+    if df.empty or df['turnover_rate'].sum() == 0:
+        return "<p>No valid turnover data.</p>"
+
     max_turnover_row = df.loc[df['turnover_rate'].idxmax()]
     max_month = max_turnover_row['label']
     max_turnover = max_turnover_row['turnover_rate']
@@ -427,6 +437,9 @@ def get_stl_decomposition_graph():
     df = df.asfreq('MS')
     df['total_quantity'] = df['total_quantity'].fillna(0)
 
+    if df.empty or df['total_quantity'].sum() == 0 or len(df) < 12:
+        return "<p>Insufficient data for STL decomposition.</p>", "<p>No recommendations available.</p>", df, None, None
+
     stl = STL(df['total_quantity'], period=12)
     result = stl.fit()
 
@@ -510,6 +523,10 @@ def get_stl_decomposition_graph():
 
 
 def get_stl_decomposition_report(df, result):
+
+    if result is None or df.empty or 'total_quantity' not in df.columns:
+        return "<p>No valid data available for STL Decomposition Report.</p>"
+    
     trend = result.trend
     seasonal = result.seasonal
     resid = result.resid
@@ -572,6 +589,10 @@ def get_stl_decomposition_report(df, result):
 
 
 def generate_recommendations_from_stl(df: pd.DataFrame, result, top_products_df: pd.DataFrame):
+    if result is None or df.empty or 'total_quantity' not in df.columns:
+        flat = ["⚠️ No valid data available for STL Decomposition Recommendations."]
+        grouped = [{'month': 'N/A', 'recs': ["⚠️ No valid data available."]}]
+        return flat, grouped
 
     flat_recs = []
     grouped = []
@@ -837,6 +858,9 @@ def get_sales_moving_average_chart():
     df['3_MA'] = df['total_sales'].rolling(window=3).mean()
     df['6_MA'] = df['total_sales'].rolling(window=6).mean()
 
+    if df.empty or df['total_sales'].sum() == 0:
+        return "<p>No sales data available.</p>", df
+
     # Plotting
     fig = go.Figure()
 
@@ -959,6 +983,9 @@ def generate_moving_average_recommendations(df: pd.DataFrame) -> list:
 
 
 def generate_sales_moving_average_report(df: pd.DataFrame) -> str:
+    
+    if df.empty or 'total_sales' not in df.columns:
+        return "<p>No sales data available for report.</p>"
     # Drop NA to avoid issues with early months having no MA
     df = df.dropna(subset=['3_MA', '6_MA'])
 
