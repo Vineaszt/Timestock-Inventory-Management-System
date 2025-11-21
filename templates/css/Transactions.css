@@ -475,6 +475,7 @@ th {
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
+<<<<<<< HEAD
 
 
 .update-btn:hover {
@@ -495,6 +496,11 @@ th {
 .delete-btn:hover {
   background-color: #b02a37;
 }
+=======
+.update-btn:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
 .update-btn:active {
   background-color: #1e7e34; /* Even darker when clicked */
@@ -554,4 +560,7 @@ th {
   background-color: #b02a37;
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913

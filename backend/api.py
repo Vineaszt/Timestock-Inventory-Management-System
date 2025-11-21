@@ -532,7 +532,7 @@ def delete_supplier(request: Request, id: str):
     
 # ----- Ordering Transaction ----
 
-@router.post("/orders")
+@router.post("/orders") #  
 def place_order(request: Request, order: OrderTransactionCreate):
     user = request.session.get("user")
     if not user or user.get("role") != "admin":
@@ -669,6 +669,7 @@ def stock_flow_summary():
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
+<<<<<<< HEAD
 # ------------ reciept and Quote ----------
 
 @router.post("/generate-receipt")
@@ -679,17 +680,38 @@ def generate_receipt(req: ReceiptRequest):
     output_dir = os.path.join(os.path.dirname(__file__), "..", "pdf_container")
     os.makedirs(output_dir, exist_ok=True)
 
+=======
+# ------------ reciept and Quote -----------
+@router.post("/generate-receipt")
+def generate_receipt(req: ReceiptRequest):
+    print("Received company name:", req.company_name) 
+    # Ensure pdf_container exists
+    output_dir = os.path.join(os.path.dirname(__file__), "..", "pdf_container")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Clean old files
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     receipt.cleanup_old_pdfs(output_dir, max_age_minutes=10)
 
     grand_total = sum(item.quantity * item.unit_price for item in req.items)
     if req.down_payment > grand_total:
         return {"error": "Down payment cannot exceed the total product cost."}
 
+<<<<<<< HEAD
     company_name = req.company_name.strip() if req.company_name and req.company_name.strip() else "Times Stock Aluminum & Glass"
 
     filename = os.path.join(output_dir, f"receipt_{uuid.uuid4().hex}.pdf")
 
     # Pass logo_data here
+=======
+    # Use provided company name or fall back to default
+    company_name = req.company_name.strip() if req.company_name and req.company_name.strip() else "Times Stock Aluminum & Glass"
+
+    # Create receipt filename
+    filename = os.path.join(output_dir, f"receipt_{uuid.uuid4().hex}.pdf")
+
+    # Generate PDF
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     receipt.generate_unofficial_receipt(
         filename=filename,
         company_name=company_name,
@@ -709,9 +731,12 @@ def generate_quotation(data: QuotationRequest):
     temp_file = NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
 
+<<<<<<< HEAD
     print("Received logo_data:", "Yes" if data.logo_data else "No")  # Debug check
 
     # Pass logo_data here
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     receipt.generate_modern_quotation_pdf(
         filename=filename,
         client_name=data.client_name,
@@ -725,8 +750,12 @@ def generate_quotation(data: QuotationRequest):
         lead_time=data.lead_time,
         company_name=data.company_name,
         company_address=data.company_address,
+<<<<<<< HEAD
         company_contact=data.company_contact,
         logo_data=data.logo_data 
+=======
+        company_contact=data.company_contact
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     )
 
     return FileResponse(filename, media_type="application/pdf", filename="quotation.pdf")

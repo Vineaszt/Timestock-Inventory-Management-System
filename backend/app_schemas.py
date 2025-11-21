@@ -169,7 +169,11 @@ class ReceiptRequest(BaseModel):
     items: list[ReceiptItem]
     down_payment: float
     company_name: str | None = None
+<<<<<<< HEAD
     logo_data: Optional[str] = None
+=======
+
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     
 class QuotationItem(BaseModel):
     description: str
@@ -191,7 +195,11 @@ class QuotationRequest(BaseModel):
     company_name: str
     company_address: Optional[str] = None
     company_contact: Optional[str] = None
+<<<<<<< HEAD
     logo_data: Optional[str] = None
+=======
+
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
 
 # SETTINGS

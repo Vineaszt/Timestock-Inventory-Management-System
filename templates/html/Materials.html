@@ -9,7 +9,11 @@
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
   <link rel="stylesheet" href="../css/Materials.css?v=7">
+<<<<<<< HEAD
 <style> 
+=======
+<style>
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 /* ---------- MOBILE LAYOUT ---------- */
 @media screen and (max-width: 768px) {
 
@@ -354,9 +358,15 @@
                         <option value="sqm">sqm (Square Meters)</option>
                     </select>
                 </div>
+<<<<<<< HEAD
                 <div class="form-group" id="unitCostContainer">
                     <label for="createUnitCost">Unit Cost (₱)</label>
                     <input type="number" id="createUnitCost" placeholder="0.00" step="0.01" min="0" step="any" required>
+=======
+                <div class="form-group">
+                    <label for="createUnitCost">Unit Cost (₱)</label>
+                    <input type="number" id="createUnitCost" placeholder="0.00" step="0.01" min="0" required>
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 </div>
                 <div class="form-group">
                     <label for="createQuantity">Quantity</label>
@@ -385,21 +395,31 @@
             <h3>Edit Material</h3>
             <span class="close" onclick="closeModal('editModal')">&times;</span>
         </div>
+<<<<<<< HEAD
 
         <div class="modal-body">
             <input type="hidden" id="editMaterialId">
 
             <div class="form-grid">
 
+=======
+        <div class="modal-body">
+            <input type="hidden" id="editMaterialId">
+            <div class="form-grid">
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group full-width">
                     <label for="editItemName">Item Name</label>
                     <input type="text" id="editItemName" placeholder="Item Name" required>
                 </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group full-width">
                     <label for="editItemDescription">Description</label>
                     <input type="text" id="editItemDescription" placeholder="Description" required>
                 </div>
+<<<<<<< HEAD
 
                 <div class="form-group">
                     <label for="editCategory">Category</label>
@@ -411,6 +431,23 @@
                     <select id="editSupplier"></select>
                 </div>
 
+=======
+                <div class="form-group">
+                    <label for="editCategory">Category</label>
+                    <select id="editCategory">
+                        <option value="raw-materials">Raw Materials</option>
+                        <option value="packaging">Packaging</option>
+                        <option value="supplies">Supplies</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editSupplier">Supplier</label>
+                    <select id="editSupplier">
+                        <option value="supplier1">Supplier 1</option>
+                        <option value="supplier2">Supplier 2</option>
+                    </select>
+                </div>
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group">
                     <label for="editUnitMeasurement">Unit Measurement</label>
                     <select id="editUnitMeasurement">
@@ -423,6 +460,7 @@
                         <option value="sqm">sqm (Square Meters)</option>
                     </select>
                 </div>
+<<<<<<< HEAD
 
                 <!-- NORMAL COST FIELD -->
                 <div class="form-group" id="editNormalCostField">
@@ -448,32 +486,52 @@
                     </div>
                 </div>
 
+=======
+                <div class="form-group">
+                    <label for="editMaterialCost">Material Cost (₱)</label>
+                    <input type="number" id="editMaterialCost" placeholder="Material Cost" step="0.01" min="0" required>
+                </div>
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group">
                     <label for="editCurrentStock">Current Stock</label>
                     <input type="number" id="editCurrentStock" placeholder="Current Stock" min="0" required>
                 </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group">
                     <label for="editMinStock">Minimum Stock</label>
                     <input type="number" id="editMinStock" placeholder="Minimum Stock" min="0" required>
                 </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
                 <div class="form-group">
                     <label for="editMaxStock">Maximum Stock</label>
                     <input type="number" id="editMaxStock" placeholder="Maximum Stock" min="0" required>
                 </div>
+<<<<<<< HEAD
 
             </div> <!-- END GRID -->
 
         </div>
 
+=======
+            </div>
+        </div>
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
         <div class="modal-actions">
             <button class="update-btn-modal" onclick="updateMaterial()">Update</button>
         </div>
     </div>
 </div>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 <!-- Single Stock Modal -->
 <div id="singleStockModal" class="modal">
   <div class="modal-content">
