@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
-  <link rel="stylesheet" href="../css/Transactions.css?v=8">
+  <link rel="stylesheet" href="../css/Transactions.css?v=9">
   <style>
 /* ================= MOBILE LAYOUT ================= */
 @media screen and (max-width: 768px) {
@@ -707,7 +707,10 @@ function renderProductionTable(page = 1) {
         <td>${row.customer_email}</td>
         <td>${row.address}</td>
         <td>${row.status_code}</td>
-        <td><button class="update-btn" onclick="openStatusModal(this, '${row.transaction_id}', '${row.status_code}')"> Update </button></td>
+        <td>
+          <button class="update-btn" onclick="openStatusModal(this, '${row.transaction_id}', '${row.status_code}')">Update</button>
+          <button class="delete-btn" onclick="deleteOrder('${row.transaction_id}')">Delete</button>
+        </td>
         <td>₱${parseFloat(row.total_amount).toFixed(2)}</td>
       `;
       tbody.appendChild(tr);
@@ -743,7 +746,10 @@ function renderOrderTable(page = 1) {
         <td>${row.customer_email}</td>
         <td>${row.address}</td>
         <td>${row.status_code}</td>
-        <td><button class="update-btn" onclick="openStatusModal(this, '${row.transaction_id}', '${row.status_code}')"> Update </button></td>
+        <td>
+          <button class="update-btn" onclick="openStatusModal(this, '${row.transaction_id}', '${row.status_code}')">Update</button>
+          <button class="delete-btn" onclick="deleteOrder('${row.transaction_id}')">Delete</button>
+        </td>
         <td>₱${parseFloat(row.total_amount).toFixed(2)}</td>
       `;
       tbody.appendChild(tr);
@@ -928,6 +934,34 @@ function submitStatusUpdate() {
   .catch(err => {
     alert("Error: " + err.message);
   });
+}
+
+async function deleteOrder(transactionId) {
+  const confirmDelete = confirm(`Are you sure you want to delete order ${transactionId}?\nIt will be lost forever.`);
+
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`/api/orders/${transactionId}`, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert("❌ Delete failed: " + (err.detail || "Unknown error"));
+      return;
+    }
+
+    const result = await res.json();
+    alert("✅ " + result.message);
+
+    // Reload the tables
+    await fetchOrderTransactions();
+
+  } catch (error) {
+    console.error("Delete error:", error);
+    alert("❌ Error deleting order");
+  }
 }
 
 // Click outside modal to close

@@ -9,7 +9,7 @@
   <title>Times Stock IMS</title>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp" rel="stylesheet">
   <link rel="stylesheet" href="../css/Materials.css?v=7">
-<style>
+<style> 
 /* ---------- MOBILE LAYOUT ---------- */
 @media screen and (max-width: 768px) {
 
@@ -354,9 +354,9 @@
                         <option value="sqm">sqm (Square Meters)</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="unitCostContainer">
                     <label for="createUnitCost">Unit Cost (₱)</label>
-                    <input type="number" id="createUnitCost" placeholder="0.00" step="0.01" min="0" required>
+                    <input type="number" id="createUnitCost" placeholder="0.00" step="0.01" min="0" step="any" required>
                 </div>
                 <div class="form-group">
                     <label for="createQuantity">Quantity</label>
@@ -385,32 +385,32 @@
             <h3>Edit Material</h3>
             <span class="close" onclick="closeModal('editModal')">&times;</span>
         </div>
+
         <div class="modal-body">
             <input type="hidden" id="editMaterialId">
+
             <div class="form-grid">
+
                 <div class="form-group full-width">
                     <label for="editItemName">Item Name</label>
                     <input type="text" id="editItemName" placeholder="Item Name" required>
                 </div>
+
                 <div class="form-group full-width">
                     <label for="editItemDescription">Description</label>
                     <input type="text" id="editItemDescription" placeholder="Description" required>
                 </div>
+
                 <div class="form-group">
                     <label for="editCategory">Category</label>
-                    <select id="editCategory">
-                        <option value="raw-materials">Raw Materials</option>
-                        <option value="packaging">Packaging</option>
-                        <option value="supplies">Supplies</option>
-                    </select>
+                    <select id="editCategory"></select>
                 </div>
+
                 <div class="form-group">
                     <label for="editSupplier">Supplier</label>
-                    <select id="editSupplier">
-                        <option value="supplier1">Supplier 1</option>
-                        <option value="supplier2">Supplier 2</option>
-                    </select>
+                    <select id="editSupplier"></select>
                 </div>
+
                 <div class="form-group">
                     <label for="editUnitMeasurement">Unit Measurement</label>
                     <select id="editUnitMeasurement">
@@ -423,29 +423,56 @@
                         <option value="sqm">sqm (Square Meters)</option>
                     </select>
                 </div>
-                <div class="form-group">
+
+                <!-- NORMAL COST FIELD -->
+                <div class="form-group" id="editNormalCostField">
                     <label for="editMaterialCost">Material Cost (₱)</label>
                     <input type="number" id="editMaterialCost" placeholder="Material Cost" step="0.01" min="0" required>
                 </div>
+
+                <!-- GLASS-SPECIFIC FIELDS -->
+                <div id="editGlassFields" style="display:none; grid-column: span 1;">
+                    <div class="form-group">
+                        <label>Glass Width (ft)</label>
+                        <input type="number" id="editGlassSize1" placeholder="Width" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Glass Height (ft)</label>
+                        <input type="number" id="editGlassSize2" placeholder="Height" step="0.01">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Cost per sqft (₱)</label>
+                        <input type="number" id="editGlassActualCost" placeholder="Cost per sqft" step="0.01">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="editCurrentStock">Current Stock</label>
                     <input type="number" id="editCurrentStock" placeholder="Current Stock" min="0" required>
                 </div>
+
                 <div class="form-group">
                     <label for="editMinStock">Minimum Stock</label>
                     <input type="number" id="editMinStock" placeholder="Minimum Stock" min="0" required>
                 </div>
+
                 <div class="form-group">
                     <label for="editMaxStock">Maximum Stock</label>
                     <input type="number" id="editMaxStock" placeholder="Maximum Stock" min="0" required>
                 </div>
-            </div>
+
+            </div> <!-- END GRID -->
+
         </div>
+
         <div class="modal-actions">
             <button class="update-btn-modal" onclick="updateMaterial()">Update</button>
         </div>
     </div>
 </div>
+
 
 <!-- Single Stock Modal -->
 <div id="singleStockModal" class="modal">
@@ -951,23 +978,48 @@ async function addMaterial() {
   const supplier_id = document.getElementById("createSupplier").value;
   const category_id = document.getElementById("createCategory").value;
   const unit_measurement = document.getElementById("createUnitMeasurement").value;
-  const material_cost = parseFloat(document.getElementById("createUnitCost").value);
   const current_stock = parseFloat(document.getElementById("createQuantity").value);
   const minimum_stock = parseFloat(document.getElementById("createMinStock").value);
   const maximum_stock = parseFloat(document.getElementById("createMaxStock").value);
 
-// Validation
+  let material_cost;
+
+  // Detect glass
+const isGlass = item_name.trim().toLowerCase().includes("glass");
+
+if (isGlass) {
+    const s1 = parseFloat(document.getElementById("glassSize1").value);
+    const s2 = parseFloat(document.getElementById("glassSize2").value);
+    const cost = parseFloat(document.getElementById("glassActualCost").value);
+
+    if (isNaN(s1) || isNaN(s2) || isNaN(cost))
+        return alert("Please fill all glass size and cost fields.");
+
+    // Multiply to get final cost
+    material_cost = s1 * s2 * cost;
+} 
+else {
+    material_cost = parseFloat(document.getElementById("createUnitCost").value);
+}
+
+
+  // Validation
   if (!item_name) return alert("Item name is required.");
   if (!item_decription) return alert("Item description is required.");
   if (!category_id) return alert("Please select a category.");
   if (!supplier_id) return alert("Please select a supplier.");
   if (!unit_measurement) return alert("Unit measurement is required.");
-  if (isNaN(material_cost) || material_cost < 0) return alert("Material cost must be a positive number.");
+
+  // Validate material cost only when it's a number
+  if (!isGlass) {
+    if (isNaN(material_cost) || material_cost < 0)
+      return alert("Material cost must be a positive number.");
+  }
+
   if (isNaN(current_stock) || current_stock < 0) return alert("Current stock must be a positive number.");
   if (isNaN(minimum_stock) || minimum_stock < 0) return alert("Minimum stock must be a positive number.");
   if (isNaN(maximum_stock) || maximum_stock < 0) return alert("Maximum stock must be a positive number.");
   if (maximum_stock < minimum_stock) return alert("Maximum stock cannot be less than minimum stock.");
-
 
   const newMaterial = {
     item_name,
@@ -991,10 +1043,10 @@ async function addMaterial() {
     if (response.ok) {
       alert("Material added successfully!");
       closeModal("createModal");
-      location.reload(); 
+      location.reload();
     } else {
-      const data = await response.json();
-      alert("Failed to add material: " + (data.detail || response.statusText));
+      const err = await response.json();
+      alert("Failed to add material:\n" + (err.detail || "Unknown error"));
     }
 
   } catch (error) {
@@ -1002,6 +1054,9 @@ async function addMaterial() {
     alert("Something went wrong.");
   }
 }
+
+
+
 </script>
 
 <!-- Delete api -->
@@ -1090,6 +1145,61 @@ async function addMaterial() {
   document.addEventListener("DOMContentLoaded", () => {
     fetchMaterialsForDelete(); // Initial call to populate the dropdown when the page is loaded
   });
+
+  // Watch item/material name input
+document.addEventListener("DOMContentLoaded", () => {
+  const itemNameInput = document.getElementById("createItemName");
+  const unitCostContainer = document.getElementById("unitCostContainer");
+
+  itemNameInput.addEventListener("input", handleUnitCostDisplay);
+
+  function handleUnitCostDisplay() {
+    const value = itemNameInput.value.trim().toLowerCase();
+
+    const containsGlass = value.includes("glass");
+
+    if (containsGlass) {
+      // Show 3-input layout
+      unitCostContainer.innerHTML = `
+        <label>Unit Cost (Glass):</label>
+        <div style="display:flex; gap:6px;">
+          <input type="number" id="glassSize1" placeholder="Size 1" min="0" step="any">
+          <input type="number" id="glassSize2" placeholder="Size 2" min="0" step="any">
+          <input type="number" id="glassActualCost" placeholder="Unit Cost" min="0" step="any">
+        </div>
+      `;
+
+      // Try to auto-detect size
+      detectAndFillGlassSize(value);
+    } 
+    else {
+      // Normal unit cost input
+      unitCostContainer.innerHTML = `
+        <label>Unit Cost:</label>
+        <input type="number" id="createUnitCost" min="0" step="any">
+      `;
+    }
+  }
+
+  function detectAndFillGlassSize(text) {
+    // Match patterns like 4x8, 4 x 8, 4X8, 4*8, etc.
+    const sizePattern = /(\d+)\s*[xX*by]+\s*(\d+)/;
+
+    const match = text.match(sizePattern);
+    if (!match) return;  // No size found
+
+    const size1 = parseFloat(match[1]);
+    const size2 = parseFloat(match[2]);
+
+    const size1Input = document.getElementById("glassSize1");
+    const size2Input = document.getElementById("glassSize2");
+
+    if (size1Input && size2Input) {
+      size1Input.value = size1;
+      size2Input.value = size2;
+    }
+  }
+});
 </script>
 <!-- Update api -->
  <script>
@@ -1103,157 +1213,199 @@ function attachStockWarning() {
 </script>
 
 <script>
+// --- Utility function to extract glass size from item name ---
+function extractGlassSize(str) {
+    const match = str.match(/(\d+(\.\d+)?)\s*x\s*(\d+(\.\d+)?)/i);
+    if (!match) return null;
+    return { s1: parseFloat(match[1]), s2: parseFloat(match[3]) };
+}
+
+// --- Open Edit Modal ---
 async function openEditModal(materialId) {
-  document.getElementById("editModal").style.display = "block";
+    document.getElementById("editModal").style.display = "block";
 
-  try {
-    const response = await fetch("/api/materials");
-    const materials = await response.json();
-    const material = materials.find(mat => mat.material_id == materialId);
+    try {
+        const response = await fetch("/api/materials");
+        const materials = await response.json();
+        const material = materials.find(mat => mat.material_id == materialId);
 
-    if (material) {
-      document.getElementById("editMaterialId").value = material.material_id;
-      document.getElementById("editItemName").value = material.item_name;
-      document.getElementById("editItemDescription").value = material.item_decription;
-      document.getElementById("editMaterialCost").value = material.material_cost;
-      document.getElementById("editCurrentStock").value = material.current_stock;
-      document.getElementById("editMinStock").value = material.minimum_stock;
-      document.getElementById("editMaxStock").value = material.maximum_stock;
+        if (!material) return console.error("Material not found");
 
-      // Wait for dropdowns to load before setting selected values
-      await fetchCategories(material.category_id);
-      await fetchSuppliers(material.supplier_id);
-      document.getElementById("editUnitMeasurement").value = material.unit_measurement;
+        // Fill basic fields
+        document.getElementById("editMaterialId").value = material.material_id;
+        document.getElementById("editItemName").value = material.item_name;
+        document.getElementById("editItemDescription").value = material.item_decription;
+        document.getElementById("editCurrentStock").value = material.current_stock;
+        document.getElementById("editMinStock").value = material.minimum_stock;
+        document.getElementById("editMaxStock").value = material.maximum_stock;
+        document.getElementById("editUnitMeasurement").value = material.unit_measurement;
 
-      // Attach a warning on current stock change
-      const stockInput = document.getElementById("editCurrentStock");
-      stockInput.onchange = function () {
-        alert("⚠️ Warning: Changing 'Current Stock' will NOT generate a stock transaction history.");
-      };
+        // Load dropdowns
+        await fetchCategories(material.category_id);
+        await fetchSuppliers(material.supplier_id);
 
-    } else {
-      console.error("Material not found");
+        // Attach warning for stock changes
+        const stockInput = document.getElementById("editCurrentStock");
+        stockInput.onchange = () => {
+            alert("⚠️ Warning: Changing 'Current Stock' will NOT generate a stock transaction history.");
+        };
+
+        // --- Glass detection ---
+        const nameLower = material.item_name.toLowerCase();
+        const glassSize = extractGlassSize(material.item_name);
+
+        if (nameLower.includes("glass") && glassSize) {
+            // Show glass fields
+            document.getElementById("editGlassFields").style.display = "grid";
+            document.getElementById("editNormalCostField").style.display = "none";
+
+            // Fill sizes
+            document.getElementById("editGlassSize1").value = glassSize.s1;
+            document.getElementById("editGlassSize2").value = glassSize.s2;
+
+            // Reverse calculate cost per sqft
+            const actualCost = material.material_cost / (glassSize.s1 * glassSize.s2);
+            document.getElementById("editGlassActualCost").value = actualCost.toFixed(2);
+
+        } else {
+            // Normal material
+            document.getElementById("editGlassFields").style.display = "none";
+            document.getElementById("editNormalCostField").style.display = "block";
+            document.getElementById("editMaterialCost").value = material.material_cost;
+        }
+
+    } catch (error) {
+        console.error("Failed to load material data:", error);
     }
-  } catch (error) {
-    console.error("Failed to load material data:", error);
-  }
 }
 
-
-async function fetchCategories(selectedId = null) {
-  try {
-    const response = await fetch("/api/material-categories");
-    const categories = await response.json();
-    const categorySelect = document.getElementById("editCategory");
-
-    categorySelect.innerHTML = ""; // Clear old options
-
-    categories.forEach(category => {
-      const option = document.createElement("option");
-      option.value = String(category.id);
-      option.textContent = category.category_name;
-      if (String(category.id) === String(selectedId)) {
-        option.selected = true; // Set selected here
-      }
-      categorySelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Failed to load categories", error);
-  }
-}
-
-
-async function fetchSuppliers(selectedId = null) {
-  try {
-    const response = await fetch("/api/suppliers");
-    const suppliers = await response.json();
-    const supplierSelect = document.getElementById("editSupplier");
-
-    supplierSelect.innerHTML = "";
-
-    suppliers.forEach(supplier => {
-      const option = document.createElement("option");
-      option.value = String(supplier.id);
-      option.textContent = supplier.contact_name;
-      if (String(supplier.id) === String(selectedId)) {
-        option.selected = true; // Set selected here
-      }
-      supplierSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Failed to load suppliers", error);
-  }
-}
-
-
-
+// --- Update Material ---
 async function updateMaterial() {
-  const materialId = document.getElementById('editMaterialId').value;
-  const itemName = document.getElementById('editItemName').value.trim();
-  const itemDescription = document.getElementById('editItemDescription').value.trim();
-  const categoryId = document.getElementById('editCategory').value;
-  const supplierId = document.getElementById('editSupplier').value;
-  const unitMeasurement = document.getElementById('editUnitMeasurement').value;
-  const materialCost = parseFloat(document.getElementById('editMaterialCost').value);
-  const currentStock = parseInt(document.getElementById('editCurrentStock').value, 10);
-  const minimumStock = parseFloat(document.getElementById('editMinStock').value);
-  const maximumStock = parseFloat(document.getElementById('editMaxStock').value);
+    const materialId = document.getElementById('editMaterialId').value;
+    const itemName = document.getElementById('editItemName').value.trim();
+    const itemDescription = document.getElementById('editItemDescription').value.trim();
+    const categoryId = document.getElementById('editCategory').value;
+    const supplierId = document.getElementById('editSupplier').value;
+    const unitMeasurement = document.getElementById('editUnitMeasurement').value;
+    const currentStock = parseInt(document.getElementById('editCurrentStock').value, 10);
+    const minimumStock = parseFloat(document.getElementById('editMinStock').value);
+    const maximumStock = parseFloat(document.getElementById('editMaxStock').value);
 
-  // Validate
-  if (!itemName) return alert("Item name is required.");
-  if (!itemDescription) return alert("Item description is required.");
-  if (!categoryId) return alert("Please select a category.");
-  if (!supplierId) return alert("Please select a supplier.");
-  if (!unitMeasurement) return alert("Unit measurement is required.");
-  if (isNaN(materialCost) || materialCost < 0) return alert("Material cost must be a positive number.");
-  if (isNaN(currentStock) || currentStock < 0) return alert("Current stock must be a positive number.");
-  if (isNaN(minimumStock) || minimumStock < 0) return alert("Minimum stock must be a positive number.");
-  if (isNaN(maximumStock) || maximumStock < 0) return alert("Maximum stock must be a positive number.");
-  if (maximumStock < minimumStock) return alert("Maximum stock cannot be less than minimum stock.");
+    // Validate basic fields
+    if (!itemName) return alert("Item name is required.");
+    if (!itemDescription) return alert("Item description is required.");
+    if (!categoryId) return alert("Please select a category.");
+    if (!supplierId) return alert("Please select a supplier.");
+    if (!unitMeasurement) return alert("Unit measurement is required.");
+    if (isNaN(currentStock) || currentStock < 0) return alert("Current stock must be a positive number.");
+    if (isNaN(minimumStock) || minimumStock < 0) return alert("Minimum stock must be a positive number.");
+    if (isNaN(maximumStock) || maximumStock < 0) return alert("Maximum stock must be a positive number.");
+    if (maximumStock < minimumStock) return alert("Maximum stock cannot be less than minimum stock.");
 
-  const materialData = {
-    material_id: materialId,
-    item_name: itemName,
-    item_description: itemDescription,
-    category_id: categoryId,
-    supplier_id: supplierId,
-    unit_measurement: unitMeasurement,
-    material_cost: materialCost,
-    current_stock: currentStock,
-    minimum_stock: minimumStock,
-    maximum_stock: maximumStock,
-  };
+    // --- Calculate final cost ---
+    let finalCost;
+    const nameLower = itemName.toLowerCase();
+    const glassSize = extractGlassSize(itemName);
 
-  try {
-    const response = await fetch(`/api/material/update`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(materialData),
-    });
+    if (nameLower.includes("glass") && glassSize) {
+        const s1 = parseFloat(document.getElementById("editGlassSize1").value);
+        const s2 = parseFloat(document.getElementById("editGlassSize2").value);
+        const actualCost = parseFloat(document.getElementById("editGlassActualCost").value);
 
-    const result = await response.json();
-    if (response.ok) {
-      alert("Material updated successfully!");
-      closeModal("editModal");
-      fetchMaterials();  // Refresh the table
+        if (isNaN(s1) || isNaN(s2) || isNaN(actualCost) || s1 <= 0 || s2 <= 0 || actualCost <= 0) {
+            return alert("Please fill all glass size and cost fields with positive numbers.");
+        }
+
+        finalCost = s1 * s2 * actualCost;
     } else {
-      alert(`Error: ${result.detail}`);
+        finalCost = parseFloat(document.getElementById("editMaterialCost").value);
+        if (isNaN(finalCost) || finalCost <= 0) return alert("Material cost must be a positive number.");
     }
-  } catch (error) {
-    console.error("Failed to update material:", error);
-    alert("Error updating material. Please try again.");
-  }
+
+    // --- Prepare payload ---
+    const materialData = {
+        material_id: materialId,
+        item_name: itemName,
+        item_description: itemDescription,
+        category_id: categoryId,
+        supplier_id: supplierId,
+        unit_measurement: unitMeasurement,
+        material_cost: finalCost,
+        current_stock: currentStock,
+        minimum_stock: minimumStock,
+        maximum_stock: maximumStock
+    };
+
+    // --- Send update ---
+    try {
+        const response = await fetch(`/api/material/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(materialData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Material updated successfully!");
+            closeModal("editModal");
+            fetchMaterials();  // Refresh the table
+        } else {
+            alert("Error:\n" + JSON.stringify(result, null, 2));
+        }
+    } catch (error) {
+        console.error("Failed to update material:", error);
+        alert("Error updating material. Please try again.");
+    }
 }
 
+// --- Fetch categories and set selected ---
+async function fetchCategories(selectedId = null) {
+    try {
+        const response = await fetch("/api/material-categories");
+        const categories = await response.json();
+        const categorySelect = document.getElementById("editCategory");
+
+        categorySelect.innerHTML = "";
+        categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = String(category.id);
+            option.textContent = category.category_name;
+            if (String(category.id) === String(selectedId)) option.selected = true;
+            categorySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Failed to load categories", error);
+    }
+}
+
+// --- Fetch suppliers and set selected ---
+async function fetchSuppliers(selectedId = null) {
+    try {
+        const response = await fetch("/api/suppliers");
+        const suppliers = await response.json();
+        const supplierSelect = document.getElementById("editSupplier");
+
+        supplierSelect.innerHTML = "";
+        suppliers.forEach(supplier => {
+            const option = document.createElement("option");
+            option.value = String(supplier.id);
+            option.textContent = supplier.contact_name;
+            if (String(supplier.id) === String(selectedId)) option.selected = true;
+            supplierSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Failed to load suppliers", error);
+    }
+}
+
+// --- Close modal on outside click ---
 window.onclick = function(event) {
-  const modal = document.getElementById("editModal");
-  if (event.target === modal) {
-    closeModal("editModal");
-  }
+    const modal = document.getElementById("editModal");
+    if (event.target === modal) closeModal("editModal");
 };
 </script>
+
 
 <!-- Stock api -->
 <script>
@@ -1572,7 +1724,13 @@ function handleMaterialChange(selectElement) {
 
   const unitCostInput = container.querySelector('.unit-cost');
   if (existingMaterialCosts[selectedId]) {
-    unitCostInput.value = existingMaterialCosts[selectedId];
+      unitCostInput.value = existingMaterialCosts[selectedId];
+  } else {
+      // 2. Otherwise, fetch cost from materials list (NORMAL behavior)
+      const mat = materialsList.find(m => m.material_id == selectedId);
+      if (mat) {
+          unitCostInput.value = mat.material_cost || 0;
+      }
   }
 
   updateTotalCost();
@@ -1751,13 +1909,13 @@ window.onclick = function(event) {
     }
   });
 };
-
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
-  if (modalId === "createModal") {
-    clearCreateMaterialsInputs();
-  }
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = "none";
+    }
 }
+
 
 function clearCreateMaterialsInputs() {
   document.getElementById("createItemName").value = "";

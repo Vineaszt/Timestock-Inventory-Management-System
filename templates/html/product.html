@@ -1200,7 +1200,13 @@ function handleMaterialChange(selectElement) {
 
   const unitCostInput = container.querySelector('.unit-cost');
   if (existingMaterialCosts[selectedId]) {
-    unitCostInput.value = existingMaterialCosts[selectedId];
+      unitCostInput.value = existingMaterialCosts[selectedId];
+  } else {
+      // 2. Otherwise, fetch cost from materials list (NORMAL behavior)
+      const mat = materialsList.find(m => m.material_id == selectedId);
+      if (mat) {
+          unitCostInput.value = mat.material_cost || 0;
+      }
   }
 
   updateTotalCost();

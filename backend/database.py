@@ -87,7 +87,7 @@ def send_email(to_email: str, new_password: str):
                 "Content-Type": "application/json",
             },
             json=data,
-            timeout=10  # optional, prevents hanging
+            timeout=10  
         )
 
         if response.status_code != 200:
@@ -1205,25 +1205,19 @@ def update_order_status(
         raise e
 
 
-  
-def add_material(
-    data: dict,
-    admin_id: Optional[str] = None,
-    cur=None
-):
-    # Normalize item fields
+def add_material(data: dict, admin_id: Optional[str] = None, cur=None):
     item_name = data['item_name'].strip().title()
-    item_description = data['item_decription'].strip()  # Keep using 'item_decription' if that's the real column name
+    item_description = data['item_decription'].strip()
     category_id = data['category_id']
 
-    # follow conn/cur pattern so audit can be atomic
     conn_used = None
     own_cursor = False
+
     if cur is None:
         try:
             conn_used = con
         except NameError:
-            raise RuntimeError("Database connection `con` is not defined in this module.")
+            raise RuntimeError("Database connection `con` is not defined.")
         cur = conn_used.cursor()
         own_cursor = True
     else:
@@ -1233,78 +1227,98 @@ def add_material(
             own_cursor = True
 
     try:
-        # Check for existing item in the 'items' table
-        existing_item = cur.execute("""
-            SELECT 1 FROM items WHERE item_name = ?
-        """, (item_name,)).fetchone()
+   
+        cur.execute("BEGIN TRANSACTION")
+
+        # Check duplicate item
+        existing_item = cur.execute(
+            "SELECT 1 FROM items WHERE item_name = ?",
+            (item_name,)
+        ).fetchone()
 
         if existing_item:
-            raise Exception(f"Item with name '{item_name}' already exists.")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Item '{item_name}' already exists."
+            )
 
-        # Insert into items table (RETURNING id so we have item_id)
+        # Insert item
         item_id = cur.execute("""
             INSERT INTO items (
-                item_name, item_decription, category_id, date_created, date_updated
-            ) VALUES (?, ?, ?, ?, ?)
+                item_name, item_decription, category_id,
+                date_created, date_updated
+            )
+            VALUES (?, ?, ?, ?, ?)
             RETURNING id
-        """, (item_name, item_description, category_id, datetime.utcnow(), datetime.utcnow())).fetchone()[0]
+        """, (
+            item_name, item_description, category_id,
+            datetime.utcnow(), datetime.utcnow()
+        )).fetchone()[0]
 
-        # Normalize material fields
-        unit_measurement = data['unit_measurement'].strip().lower()
-        material_cost = data['material_cost']
-        current_stock = data['current_stock']
-        minimum_stock = data['minimum_stock']
-        maximum_stock = data['maximum_stock']
-        supplier_id = data['supplier_id']
-
-        # Check for existing material with the same item_id
-        existing_material = cur.execute("""
-            SELECT 1 FROM materials WHERE item_id = ?
-        """, (item_id,)).fetchone()
+        # Check duplicate material for same item
+        existing_material = cur.execute(
+            "SELECT 1 FROM materials WHERE item_id = ?",
+            (item_id,)
+        ).fetchone()
 
         if existing_material:
-            raise Exception(f"Material with item ID '{item_id}' already exists.")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Material for item '{item_name}' already exists."
+            )
 
-        # Insert into materials table and capture material_id
+        # Insert material
         material_id = cur.execute("""
             INSERT INTO materials (
                 item_id, category_id, unit_measurement, material_cost,
                 current_stock, minimum_stock, maximum_stock, supplier_id,
                 date_created, date_updated
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
         """, (
-            item_id, category_id, unit_measurement, material_cost,
-            current_stock, minimum_stock, maximum_stock, supplier_id,
-            datetime.utcnow(), datetime.utcnow()
+            item_id,
+            category_id,
+            data['unit_measurement'].strip().lower(),
+            data['material_cost'],
+            data['current_stock'],
+            data['minimum_stock'],
+            data['maximum_stock'],
+            data['supplier_id'],
+            datetime.utcnow(),
+            datetime.utcnow()
         )).fetchone()[0]
 
-        # write audit if admin_id provided (same cursor, atomic)
+        # Audit log
         if admin_id is not None:
-            details = (
-                f"Added material id={material_id} (item_id={item_id}) "
-                f"unit_measurement={unit_measurement}, material_cost={material_cost}, "
-                f"current_stock={current_stock}, supplier_id={supplier_id}"
-            )
             log_audit(
                 entity="materials",
                 entity_id=str(material_id),
                 action="create",
-                details=details,
+                details=f"Added material id={material_id} for item '{item_name}'",
                 admin_id=admin_id,
                 cur=cur
             )
 
-        if own_cursor and conn_used is not None:
-            conn_used.commit()
-
-        # keep previous return value (item_id) for compatibility
+   
+        cur.execute("COMMIT")
         return item_id
 
-    except Exception:
-        if own_cursor and conn_used is not None:
-            conn_used.rollback()
-        raise
+    except HTTPException as e:
+
+        try:
+            cur.execute("ROLLBACK")
+        except:
+            pass
+        raise e
+
+    except Exception as e:
+       
+        try:
+            cur.execute("ROLLBACK")
+        except:
+            pass
+        raise HTTPException(status_code=500, detail=str(e))
 
   
 def stock_materials(
@@ -2312,6 +2326,7 @@ def create_order_transaction(data: dict, admin_id: Optional[str] = None, cur=Non
         material_requirements = {}
         material_map = {}
 
+        # Add normal product materials
         for pm in product_materials:
             (product_id, material_id, used_qty, current_stock,
              item_name, unit, supplier_id) = pm
@@ -2327,14 +2342,50 @@ def create_order_transaction(data: dict, admin_id: Optional[str] = None, cur=Non
                     "needed": 0,
                     "available": current_stock,
                     "item_name": item_name,
-                    "unit": unit
+                    "unit": unit,
+                    "supplier_id": supplier_id
                 }
 
+        # --- Step 2a: Include selected glass/materials in requirements ---
         for item in items:
+            for m in item.get("materials", []):
+                material_id_to_use = m.get("selected_glass_id") or m.get("original_material_id")
+                if not material_id_to_use:
+                    # Skip if no glass/material is selected, this is fine for non-glass products
+                    continue
+
+                if material_id_to_use not in material_requirements:
+                    row = cur.execute("""
+                        SELECT m.supplier_id, m.current_stock, i.item_name, m.unit_measurement
+                        FROM materials m
+                        JOIN items i ON m.item_id = i.id
+                        WHERE m.id = ?
+                    """, (material_id_to_use,)).fetchone()
+                    if row:
+                        material_requirements[material_id_to_use] = {
+                            "needed": 0,
+                            "available": row[1],
+                            "item_name": row[2],
+                            "unit": row[3],
+                            "supplier_id": row[0]
+                        }
+                    else:
+                        raise HTTPException(status_code=400, detail=f"Material {material_id_to_use} not found")
+
+        # --- Step 2b: Calculate total needed quantities ---
+        for item in items:
+            # standard product materials
             for m in material_map.get(item['product_id'], []):
                 total_needed = m['used_qty'] * item['quantity']
                 material_requirements[m['material_id']]["needed"] += total_needed
 
+            # custom/selected materials
+            for m in item.get("materials", []):
+                material_id_to_use = m.get("selected_glass_id") or m.get("original_material_id")
+                total_needed = m['used_quantity'] * item['quantity']
+                material_requirements[material_id_to_use]["needed"] += total_needed
+
+        # --- Step 2c: Check insufficient stock ---
         lacking_materials = [
             f"{v['item_name']} (Need: {v['needed']} {v['unit']}, Available: {v['available']} {v['unit']})"
             for v in material_requirements.values() if v["needed"] > v["available"]
@@ -2372,33 +2423,44 @@ def create_order_transaction(data: dict, admin_id: Optional[str] = None, cur=Non
         for item in items:
             pid = item['product_id']
             qty = item['quantity']
-            unit_price = float(price_map.get(pid))
-            line_total = qty * unit_price
+            unit_price = float(item.get("unit_price"))
+            misc_fee = float(item.get("misc_fee", 0))
+            
+            line_total = qty * unit_price * (1 + misc_fee / 100)
             total_amount += line_total
-            order_items_data.append((transaction_id, pid, qty, unit_price))
 
-            for m in material_map.get(pid, []):
-                total_used = m['used_qty'] * qty
+            order_items_data.append((transaction_id, pid, qty, unit_price))
+            
+            for m in item.get("materials", []):
+                material_id_to_use = m.get("selected_glass_id") or m.get("original_material_id")
+                if not material_id_to_use:
+                    raise HTTPException(status_code=400, detail=f"Material ID missing for {m.get('item_name')}")
+
+                used_qty = float(m.get('used_quantity') or 0)
+                total_used = used_qty * qty
+
+                if total_used > 0:
+                    cur.execute("""
+                        UPDATE materials
+                        SET current_stock = current_stock - ?
+                        WHERE id = ?
+                    """, (total_used, material_id_to_use))
+
                 stock_transactions_data.append((
                     'STT002',
-                    m['supplier_id'],
+                    material_requirements[material_id_to_use]['supplier_id'],
                     actor_admin,
                     datetime.utcnow()
                 ))
-                stock_items_data.append((m['material_id'], total_used))
+                stock_items_data.append((material_id_to_use, total_used))
 
-                cur.execute("""
-                    UPDATE materials
-                    SET current_stock = current_stock - ?
-                    WHERE id = ?
-                """, (total_used, m['material_id']))
 
         cur.executemany("""
             INSERT INTO order_items (order_id, product_id, quantity, unit_price)
             VALUES (?, ?, ?, ?)
         """, order_items_data)
 
-        # --- Step 7: Stock transactions ---
+        # --- Step 6: Stock transactions ---
         for idx, tx in enumerate(stock_transactions_data):
             stock_txn_id = cur.execute("""
                 INSERT INTO stock_transactions (
@@ -2414,6 +2476,7 @@ def create_order_transaction(data: dict, admin_id: Optional[str] = None, cur=Non
                 ) VALUES (?, ?, ?)
             """, (stock_txn_id, material_id, qty_used))
 
+        # --- Step 7: Update total ---
         cur.execute("""
             UPDATE order_transactions
             SET total_amount = ?
@@ -2445,6 +2508,7 @@ def create_order_transaction(data: dict, admin_id: Optional[str] = None, cur=Non
             except Exception:
                 pass
         raise HTTPException(status_code=500, detail=str(e))
+
 
 def get_order_transactions_detailed():
     return con.execute("""
@@ -2486,6 +2550,49 @@ def get_order_transactions_detailed():
         ORDER BY ot.date_created DESC
     """).fetchdf()
 
+def delete_order_transaction(transaction_id: str):
+    con = get_db_connection()
+    cur = con.cursor()
+
+    try:
+        # Begin transaction
+        con.execute("BEGIN")
+
+        # Check if the order exists
+        existing = cur.execute("""
+            SELECT id FROM order_transactions
+            WHERE id = ?
+        """, (transaction_id,)).fetchone()
+
+        if not existing:
+            raise HTTPException(status_code=404, detail="Order transaction not found")
+
+        # Delete child order items
+        cur.execute("""
+            DELETE FROM order_items
+            WHERE order_id = ?
+        """, (transaction_id,))
+
+        # Delete parent order transaction
+        cur.execute("""
+            DELETE FROM order_transactions
+            WHERE id = ?
+        """, (transaction_id,))
+
+        con.execute("COMMIT")
+
+        return {
+            "transaction_id": transaction_id,
+            "message": "Order deleted successfully"
+        }
+
+    except Exception as e:
+        # Rollback if anything fails
+        try:
+            con.execute("ROLLBACK")
+        except:
+            pass
+        raise HTTPException(status_code=500, detail=f"Deletion failed: {str(e)}")
 
 #Other Get/Reads
 def get_unit_measurements():

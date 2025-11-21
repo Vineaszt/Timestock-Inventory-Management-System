@@ -112,6 +112,11 @@ class ProductMaterialBulkCreate(BaseModel):
 class ProductMaterialCreate(ProductMaterialBase):
     pass
 #---- Order transactions ----
+class OrderItemMaterial(BaseModel):
+    original_material_id: str         
+    selected_glass_id: Optional[str] = None
+    used_quantity: float 
+
 class OrderItemBase(BaseModel):
     product_id: str
     quantity: int
@@ -121,6 +126,10 @@ class OrderItemBase(BaseModel):
 class OrderItemCreate(BaseModel):
     product_id: str
     quantity: int
+    unit_price: float | None = None
+    misc_fee: float | None = None
+    materials: Optional[List[OrderItemMaterial]] = None
+
 
 class OrderTransactionCreate(BaseModel):
     customer_id: Optional[str] = None
@@ -160,7 +169,7 @@ class ReceiptRequest(BaseModel):
     items: list[ReceiptItem]
     down_payment: float
     company_name: str | None = None
-
+    logo_data: Optional[str] = None
     
 class QuotationItem(BaseModel):
     description: str
@@ -182,7 +191,7 @@ class QuotationRequest(BaseModel):
     company_name: str
     company_address: Optional[str] = None
     company_contact: Optional[str] = None
-
+    logo_data: Optional[str] = None
 
 
 # SETTINGS
