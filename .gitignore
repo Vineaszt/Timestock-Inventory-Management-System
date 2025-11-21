@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-
+backend/db_timestock1
 # Builds
 dist/
 out/
