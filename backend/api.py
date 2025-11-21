@@ -544,8 +544,33 @@ def place_order(request: Request, order: OrderTransactionCreate):
     order_data = order.dict()
     order_data["admin_id"] = admin_id
 
-    result = database.create_order_transaction(order_data)
-    return result
+    try:
+        result = database.create_order_transaction(order_data)
+        return result
+
+    except HTTPException as e:
+        # Already a proper FastAPI HTTPException, re-raise
+        raise e
+
+    except ValueError as e:
+        # Handle validation errors from your code
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(e)}
+        )
+
+    except Exception as e:
+        # Catch any unexpected errors and return readable JSON
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": "An unexpected error occurred while placing the order.",
+                "details": str(e),
+                "trace": traceback.format_exc() 
+            }
+        )
 
 @router.get("/order-statuses")
 def order_statuses():
@@ -571,6 +596,17 @@ def update_order_transaction_status(request: Request, data: OrderStatusUpdate):
 def read_order_transactions():
     return database.get_order_transactions_detailed().to_dict(orient="records")
 
+
+@router.delete("/orders/{transaction_id}")
+def delete_order_route(transaction_id: str):
+    try:
+        result = database.delete_order_transaction(transaction_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 # ----- Other Read/Get -----
 
 @router.get("/unit-measurements")
@@ -633,29 +669,27 @@ def stock_flow_summary():
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# ------------ reciept and Quote -----------
+# ------------ reciept and Quote ----------
+
 @router.post("/generate-receipt")
 def generate_receipt(req: ReceiptRequest):
     print("Received company name:", req.company_name) 
-    # Ensure pdf_container exists
+    print("Received logo_data:", "Yes" if req.logo_data else "No")  # Debug check
+
     output_dir = os.path.join(os.path.dirname(__file__), "..", "pdf_container")
     os.makedirs(output_dir, exist_ok=True)
 
-    # Clean old files
     receipt.cleanup_old_pdfs(output_dir, max_age_minutes=10)
 
-    # Validate down payment
     grand_total = sum(item.quantity * item.unit_price for item in req.items)
     if req.down_payment > grand_total:
         return {"error": "Down payment cannot exceed the total product cost."}
 
-    # Use provided company name or fall back to default
     company_name = req.company_name.strip() if req.company_name and req.company_name.strip() else "Times Stock Aluminum & Glass"
 
-    # Create receipt filename
     filename = os.path.join(output_dir, f"receipt_{uuid.uuid4().hex}.pdf")
 
-    # Generate PDF
+    # Pass logo_data here
     receipt.generate_unofficial_receipt(
         filename=filename,
         company_name=company_name,
@@ -663,16 +697,21 @@ def generate_receipt(req: ReceiptRequest):
         address=req.address,
         phone=req.phone,
         items=[item.dict() for item in req.items],
-        down_payment=req.down_payment
+        down_payment=req.down_payment,
+        logo_data=req.logo_data 
     )
 
     return FileResponse(filename, media_type="application/pdf", filename="receipt.pdf")
+
 
 @router.post("/generate-quotation")
 def generate_quotation(data: QuotationRequest):
     temp_file = NamedTemporaryFile(delete=False, suffix=".pdf")
     filename = temp_file.name
 
+    print("Received logo_data:", "Yes" if data.logo_data else "No")  # Debug check
+
+    # Pass logo_data here
     receipt.generate_modern_quotation_pdf(
         filename=filename,
         client_name=data.client_name,
@@ -686,7 +725,8 @@ def generate_quotation(data: QuotationRequest):
         lead_time=data.lead_time,
         company_name=data.company_name,
         company_address=data.company_address,
-        company_contact=data.company_contact
+        company_contact=data.company_contact,
+        logo_data=data.logo_data 
     )
 
     return FileResponse(filename, media_type="application/pdf", filename="quotation.pdf")

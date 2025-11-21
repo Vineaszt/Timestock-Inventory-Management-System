@@ -320,6 +320,9 @@
     <div class="modal-left">
       <h4>Down Payment & Receipt</h4>
 
+      <label>Upload Company Logo (JPEG/PNG)</label>
+      <input type="file" id="receiptLogo" accept="image/png, image/jpeg" class="form-control mb-2">
+
       <!-- Optional Company Name -->
       <input 
         type="text" 
@@ -357,7 +360,8 @@
     <div class="modal-left">
       <div class="modal-scroll-area">
         <h4>Quotation</h4>
-
+        <label>Upload Company Logo (JPEG/PNG)</label>
+        <input type="file" id="quotationLogo" accept="image/png, image/jpeg" class="form-control mb-2">
         <!-- Owner Info -->
         <label>Owner Name</label>
         <input type="text" id="ownerName" class="form-control" placeholder="e.g., John Cena" required>
@@ -443,48 +447,77 @@
 
 <script>
 let orderCart = [];
+let receiptLogoFile = null;
+let quotationLogoFile = null;
+let allGlassMaterials = [];
 
-document.addEventListener("DOMContentLoaded", function () {
+function loadGlassMaterials() {
+    return fetch('/api/materials')
+        .then(res => res.json())
+        .then(data => {
+            allGlassMaterials = data.filter(m => /glass\s*\d+x\d+/i.test(m.item_name));
+        });
+}
+
+document.getElementById('receiptLogo').addEventListener('change', function(e){
+    receiptLogoFile = e.target.files[0] || null;
+});
+
+document.getElementById('quotationLogo').addEventListener('change', function(e){
+    quotationLogoFile = e.target.files[0] || null;
+});
+
+
+async function initPage() {
+  // Load glass materials first
+  await loadGlassMaterials();
+
+  // Fetch products and populate dropdown and table
+  const res = await fetch('api/products');
+  const data = await res.json();
+
   const productList = document.getElementById('productList');
   const productSelect = document.getElementById('productSelect');
 
-  fetch('api/products')
-    .then(res => res.json())
-    .then(data => {
-      data.forEach(product => {
-        // --- Populate dropdown ---
-        const option = document.createElement('option');
-        option.value = product.product_id;
-        option.textContent = product.item_name;
-        option.dataset.unitPrice = product.unit_price;
-        productSelect.appendChild(option);
+  data.forEach(product => {
+    const option = document.createElement('option');
+    option.value = product.product_id;
+    option.textContent = product.item_name;
+    option.dataset.unitPrice = product.unit_price;
+    productSelect.appendChild(option);
 
-        // --- Populate table ---
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${product.product_id}</td>
-          <td><button class="btn btn-link" onclick="handleProductClick('${product.product_id}', '${product.item_name}', ${product.unit_price})">${product.item_name}</button></td>
-          <td>₱${product.unit_price.toFixed(2)}</td>
-        `;
-        productList.appendChild(row);
-      });
-    });
-
-  // Handle dropdown selection
-  productSelect.addEventListener('change', function () {
-    const selectedOption = productSelect.selectedOptions[0];
-    if (selectedOption && selectedOption.value) {
-      const productId = selectedOption.value;
-      const itemName = selectedOption.textContent;
-      const unitPrice = parseFloat(selectedOption.dataset.unitPrice);
-      handleProductClick(productId, itemName, unitPrice);
-
-      // Optional: scroll table to the selected product row
-      const row = Array.from(productList.children).find(r => r.cells[0].textContent === productId);
-      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (product.status === "Available") {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${product.product_id}</td>
+        <td><button class="btn btn-link" onclick="handleProductClick('${product.product_id}', '${product.item_name}', ${product.unit_price})">${product.item_name}</button></td>
+        <td>₱${product.unit_price.toFixed(2)}</td>
+      `;
+      productList.appendChild(row);
     }
   });
+
+  // Setup dropdown change
+  productSelect.addEventListener('change', function () {
+    const selectedOption = productSelect.selectedOptions[0];
+    if (!selectedOption || !selectedOption.value) return;
+
+    const productId = selectedOption.value;
+    const itemName = selectedOption.textContent;
+    const unitPrice = parseFloat(selectedOption.dataset.unitPrice);
+
+    handleProductClick(productId, itemName, unitPrice);
+  });
+
+  // Render initial cart if anything exists
+  renderCart();
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initPage();      // load glass materials and product list
+  await loadStatusOptions(); // load order status dropdown
 });
+
 
 function handleProductClick(productId, itemName, unitPrice) {
   fetch(`api/products/${productId}/quote`)
@@ -541,17 +574,26 @@ function handleProductClick(productId, itemName, unitPrice) {
     });
 }
 
+function adjustMaterialCosts(item) {
+    // Recalculate material line costs from unit_cost and used_quantity
+    if (!item.materials || item.materials.length === 0) return;
+
+    item.materials = item.materials.map(m => ({
+        ...m,
+        line_cost: m.unit_cost * m.used_quantity
+    }));
+}
+
 
 
 function renderCart() {
   const cart = document.getElementById('orderCart');
-  const totalsDiv = document.getElementById('orderTotals'); // new totals div
+  const totalsDiv = document.getElementById('orderTotals');
   cart.innerHTML = '';
   let totalProductCost = 0;
   let totalMaterialCost = 0;
 
-    if (orderCart.length === 0) {
-    // Placeholder row if cart is empty
+  if (orderCart.length === 0) {
     cart.innerHTML = '<tr class="placeholder-row"><td colspan="6" class="text-center text-muted">No products added to the order cart</td></tr>';
     totalsDiv.innerHTML = '<div class="placeholder-text text-center text-muted">No items in the cart yet</div>';
     return;
@@ -611,19 +653,68 @@ function renderCart() {
               </tr>
             </thead>
             <tbody>
-              ${item.materials.map((m, mIndex) => `
-                <tr>
-                  <td>${m.item_name}</td>
-                  <td>
-                    <input type="number" min="0" step="0.01" value="${m.used_quantity}" 
-                          onchange="updateUsedQuantity('${item.product_id}', ${mIndex}, this.value)" 
-                          class="form-control form-control-sm" 
-                          style="width: 60px;" /> ${m.unit_measurement}
-                  </td>
-                  <td>₱${isNaN(m.unit_cost) ? '0.00' : m.unit_cost.toFixed(2)}</td>
-                  <td>₱${isNaN(m.line_cost) ? '0.00' : m.line_cost.toFixed(2)}</td>
-                </tr>
-              `).join('')}
+              ${item.materials.map((m, mIndex) => {
+                  let materialCell = '';
+
+                  // Check if material is glass
+                  const glassMatch = m.item_name.match(/glass\s*(\d+)x(\d+)/i);
+                  if (glassMatch && allGlassMaterials.length > 0) {
+                      const reqW = parseInt(glassMatch[1]);
+                      const reqH = parseInt(glassMatch[2]);
+
+                      // Filter glass options that are larger or equal
+                      const glassOptions = allGlassMaterials.filter(g => {
+                          const gMatch = g.item_name.match(/glass\s*(\d+)x(\d+)/i);
+                          if (!gMatch) return false;
+                          const w = parseInt(gMatch[1]);
+                          const h = parseInt(gMatch[2]);
+                          return w >= reqW && h >= reqH;
+                      });
+
+                      if (!m.selected_glass_id) {
+                          const originalGlass = glassOptions.find(g => g.material_id === m.material_id);
+                          if (originalGlass) {
+                              m.selected_glass_id = originalGlass.material_id;
+                          } else if (glassOptions.length > 0) {
+                              m.selected_glass_id = glassOptions[0].material_id;
+                          } else {
+                              // fallback: just use original material id
+                              m.selected_glass_id = m.material_id;
+                          }
+                      }
+
+                      materialCell = `
+                          <div><strong>${m.item_name}</strong></div>
+                          <select onchange="updateSelectedGlass('${item.product_id}', ${mIndex}, this.value)" 
+                                  class="form-select form-select-sm" style="width:auto; display:inline-block; margin-top:2px;">
+                              ${glassOptions.map(g => `
+                                  <option value="${g.material_id}" ${g.material_id === m.selected_glass_id ? 'selected' : ''}>
+                                      ${g.item_name} (Stock: ${g.current_stock})
+                                  </option>`).join('')}
+                          </select>
+                      `;
+                  } else {
+                      // If it doesn't match glass regex, just render name normally
+                      materialCell = m.item_name;
+                      // Also make sure selected_glass_id is undefined for non-glass
+                      delete m.selected_glass_id;
+                  }
+
+                  return `
+                    <tr>
+                      <td>${materialCell}</td>
+                      <td>
+                        <input type="number" min="0" step="0.01" value="${m.used_quantity}" 
+                              onchange="updateUsedQuantity('${item.product_id}', ${mIndex}, this.value)" 
+                              class="form-control form-control-sm" 
+                              style="width: 60px;" /> ${m.unit_measurement}
+                      </td>
+                      <td>₱${isNaN(m.unit_cost) ? '0.00' : m.unit_cost.toFixed(2)}</td>
+                      <td>₱${isNaN(m.line_cost) ? '0.00' : m.line_cost.toFixed(2)}</td>
+                    </tr>
+                  `;
+              }).join('')}
+
             </tbody>
           </table>
         </td>
@@ -632,11 +723,20 @@ function renderCart() {
     }
   });
 
-  // Populate the new totals div
   totalsDiv.innerHTML = `
     <div><strong>Grand Total Product Cost (with Misc Fees):</strong> ₱${totalProductCost.toFixed(2)}</div>
     <div><strong>Total Material Quotation Cost:</strong> ₱${totalMaterialCost.toFixed(2)}</div>
   `;
+}
+
+// --- Update selected glass for material ---
+function updateSelectedGlass(productId, materialIndex, newMaterialId) {
+  const item = orderCart.find(p => p.product_id === productId);
+  if (!item || !item.materials[materialIndex]) return;
+  item.materials[materialIndex].selected_glass_id = newMaterialId;
+  renderCart();
+  hideReceiptPreview();
+  hideQuotationPreview();
 }
 
 document.getElementById('clearAllBtn').addEventListener('click', () => {
@@ -663,6 +763,7 @@ function updateUnitPrice(productId, newPrice) {
     const price = parseFloat(newPrice);
     if (!isNaN(price)) {
       item.unit_price = price;
+      adjustMaterialCosts(item);
       renderCart();
       hideReceiptPreview();
       hideQuotationPreview();
@@ -670,26 +771,30 @@ function updateUnitPrice(productId, newPrice) {
   }
 }
 
+
 function updateMiscFee(productId, fee) {
   const item = orderCart.find(p => p.product_id === productId);
   if (item) {
     const val = parseFloat(fee);
     item.misc_fee = isNaN(val) ? 0 : val;
+    adjustMaterialCosts(item);
     renderCart();
     hideReceiptPreview();
     hideQuotationPreview();
   }
 }
 
+
 function updateQuantity(productId, newQty) {
   const item = orderCart.find(p => p.product_id === productId);
   if (item) {
     item.quantity = parseInt(newQty) || 1;
+    renderCart();
+    hideReceiptPreview();
+    hideQuotationPreview();
   }
-  renderCart();
-  hideReceiptPreview();
-  hideQuotationPreview();
 }
+
 
 function updateUsedQuantity(productId, materialIndex, newQty) {
   const item = orderCart.find(i => i.product_id === productId);
@@ -718,30 +823,27 @@ function removeFromCart(productId) {
   hideQuotationPreview();
 }
 
-function loadStatusOptions() {
-  fetch('/api/order-statuses')
-    .then(res => {
-      if (!res.ok) throw new Error("Status API returned " + res.status);
-      return res.json();
-    })
-    .then(data => {
-      const select = document.getElementById('status_id');
-      if (!select) return console.error("Selector #status_id not found!");
+async function loadStatusOptions() {
+  try {
+    const res = await fetch('/api/order-statuses');
+    if (!res.ok) throw new Error("Status API returned " + res.status);
+    const data = await res.json();
 
-      data.forEach(status => {
-        const option = document.createElement('option');
-        option.value = status.id;
-        option.textContent = status.status_code;
-        if (status.id === "OS004") option.selected = true;
-        select.appendChild(option);
-      });
-    })
-    .catch(err => console.error("Failed to load statuses:", err));
+    const select = document.getElementById('status_id');
+    if (!select) return console.error("Selector #status_id not found!");
+
+    data.forEach(status => {
+      const option = document.createElement('option');
+      option.value = status.id;
+      option.textContent = status.status_code;
+      if (status.id === "OS004") option.selected = true;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error("Failed to load statuses:", err);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadStatusOptions();
-});
 
 function submitOrder() {
   if (orderCart.length === 0) return alert("Cart is empty!");
@@ -817,7 +919,16 @@ function submitOrder() {
       product_id: p.product_id,
       quantity: p.quantity,
       unit_price: p.unit_price,
-      misc_fee: p.misc_fee
+      misc_fee: p.misc_fee,
+      materials: p.materials.map(m => {
+        const matPayload = {
+          original_material_id: m.material_id,
+          used_quantity: m.used_quantity
+        };
+        // Only add selected_glass_id if it exists
+        if (m.selected_glass_id) matPayload.selected_glass_id = m.selected_glass_id;
+        return matPayload;
+      })
     }))
   };
 
@@ -830,14 +941,21 @@ function submitOrder() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(orderData)
   })
-    .then(res => {
+    .then(async res => {
       if (!res.ok) {
-        return res.json().then(err => {
-          throw new Error(err.detail || "Order failed");
-        });
+        let errMsg = "Order failed";
+        try {
+          const errData = await res.json();
+          if (errData?.detail) {
+            // Convert object detail to string if needed
+            errMsg = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch {}
+        throw new Error(errMsg);
       }
       return res.json();
     })
+
     .then(result => {
       // Updated message for background task
       alert("✅ Your order has been processed.");
@@ -865,7 +983,6 @@ function clearCustomerForm() {
 function generateReceipt() {
   if (orderCart.length === 0) return alert("Cart is empty!");
 
-  // --- Customer validation ---
   const fields = ["firstname", "lastname", "contact_number", "email", "address"];
   for (const field of fields) {
     const el = document.getElementById(field);
@@ -876,7 +993,7 @@ function generateReceipt() {
     }
   }
 
-  hideReceiptPreview(); // Clear previous preview if any
+  hideReceiptPreview();
 
   const customer = {
     firstname: document.getElementById('firstname').value.trim(),
@@ -894,7 +1011,7 @@ function generateReceipt() {
     address: customer.address,
     phone: customer.contact_number,
     down_payment: downPayment,
-    company_name: companyName || null, //pass null if blank
+    company_name: companyName || null,
     items: orderCart.map(item => ({
       unit_id: item.product_id,
       name: item.item_name,
@@ -903,32 +1020,58 @@ function generateReceipt() {
     }))
   };
 
+  // Include logo if selected
+  if (receiptLogoFile) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      payload.logo_data = reader.result; 
+      sendReceiptPayload(payload);
+    };
+    reader.readAsDataURL(receiptLogoFile);
+  } else {
+    sendReceiptPayload(payload);
+  }
+}
+
+function sendReceiptPayload(payload) {
   fetch("/api/generate-receipt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to generate receipt");
-      return res.blob();
-    })
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      currentReceiptPath = url;
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to generate receipt");
+    return res.blob();
+  })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    currentReceiptPath = url;
 
-      const iframe = document.getElementById("receiptPreview");
-      const downloadLink = document.getElementById("downloadReceiptLink");
+    const iframe = document.getElementById("receiptPreview");
+    const downloadLink = document.getElementById("downloadReceiptLink");
 
-      iframe.src = url;
-      iframe.style.display = "block";
+    iframe.src = url;
+    iframe.style.display = "block";
 
-      downloadLink.href = url;
-      downloadLink.download = "receipt.pdf";
-      downloadLink.style.display = "inline-block";
+    downloadLink.href = url;
+    downloadLink.download = "receipt.pdf";
+    downloadLink.style.display = "inline-block";
 
-      openModal("receiptModal");
-    })
-    .catch(err => alert("Error: " + err.message));
+    openModal("receiptModal");
+  })
+  .catch(err => alert("Error: " + err.message));
+}
+
+
+
+function addBullet(sectionId) {
+  const container = document.getElementById(sectionId);
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "form-control mt-1";
+  input.placeholder = "Enter bullet point";
+  input.required = true;
+  container.appendChild(input);
 }
 
 
@@ -956,7 +1099,6 @@ function generateQuotation() {
     }
   }
 
-  // Get bullet point sections
   const getBullets = (sectionId) =>
     Array.from(document.querySelectorAll(`#${sectionId} input`))
       .map(el => el.value.trim())
@@ -1011,31 +1153,44 @@ function generateQuotation() {
     company_contact: companyContact
   };
 
+  // Include logo if selected
+  if (quotationLogoFile) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      payload.logo_data = reader.result;
+      sendQuotationPayload(payload);
+    };
+    reader.readAsDataURL(quotationLogoFile);
+  } else {
+    sendQuotationPayload(payload);
+  }
+}
 
+function sendQuotationPayload(payload) {
   fetch("/api/generate-quotation", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to generate quotation");
-      return res.blob();
-    })
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const iframe = document.getElementById("quotationPreview");
-      const downloadLink = document.getElementById("downloadQuotationLink");
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to generate quotation");
+    return res.blob();
+  })
+  .then(blob => {
+    const url = URL.createObjectURL(blob);
+    const iframe = document.getElementById("quotationPreview");
+    const downloadLink = document.getElementById("downloadQuotationLink");
 
-      iframe.src = url;
-      iframe.style.display = "block";
+    iframe.src = url;
+    iframe.style.display = "block";
 
-      downloadLink.href = url;
-      downloadLink.download = "quotation.pdf";
-      downloadLink.style.display = "inline-block";
+    downloadLink.href = url;
+    downloadLink.download = "quotation.pdf";
+    downloadLink.style.display = "inline-block";
 
-      openModal("quotationModal");
-    })
-    .catch(err => alert("Error: " + err.message));
+    openModal("quotationModal");
+  })
+  .catch(err => alert("Error: " + err.message));
 }
 
 
