@@ -320,12 +320,9 @@
     <div class="modal-left">
       <h4>Down Payment & Receipt</h4>
 
-<<<<<<< HEAD
       <label>Upload Company Logo (JPEG/PNG)</label>
       <input type="file" id="receiptLogo" accept="image/png, image/jpeg" class="form-control mb-2">
 
-=======
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
       <!-- Optional Company Name -->
       <input 
         type="text" 
@@ -363,12 +360,8 @@
     <div class="modal-left">
       <div class="modal-scroll-area">
         <h4>Quotation</h4>
-<<<<<<< HEAD
         <label>Upload Company Logo (JPEG/PNG)</label>
         <input type="file" id="quotationLogo" accept="image/png, image/jpeg" class="form-control mb-2">
-=======
-
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
         <!-- Owner Info -->
         <label>Owner Name</label>
         <input type="text" id="ownerName" class="form-control" placeholder="e.g., John Cena" required>
@@ -458,7 +451,6 @@ let receiptLogoFile = null;
 let quotationLogoFile = null;
 let allGlassMaterials = [];
 
-<<<<<<< HEAD
 function loadGlassMaterials() {
     return fetch('/api/materials')
         .then(res => res.json())
@@ -469,48 +461,6 @@ function loadGlassMaterials() {
 
 document.getElementById('receiptLogo').addEventListener('change', function(e){
     receiptLogoFile = e.target.files[0] || null;
-=======
-document.addEventListener("DOMContentLoaded", function () {
-  const productList = document.getElementById('productList');
-  const productSelect = document.getElementById('productSelect');
-
-  fetch('api/products')
-    .then(res => res.json())
-    .then(data => {
-      data.forEach(product => {
-        // --- Populate dropdown ---
-        const option = document.createElement('option');
-        option.value = product.product_id;
-        option.textContent = product.item_name;
-        option.dataset.unitPrice = product.unit_price;
-        productSelect.appendChild(option);
-
-        // --- Populate table ---
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${product.product_id}</td>
-          <td><button class="btn btn-link" onclick="handleProductClick('${product.product_id}', '${product.item_name}', ${product.unit_price})">${product.item_name}</button></td>
-          <td>₱${product.unit_price.toFixed(2)}</td>
-        `;
-        productList.appendChild(row);
-      });
-    });
-
-  // Handle dropdown selection
-  productSelect.addEventListener('change', function () {
-    const selectedOption = productSelect.selectedOptions[0];
-    if (selectedOption && selectedOption.value) {
-      const productId = selectedOption.value;
-      const itemName = selectedOption.textContent;
-      const unitPrice = parseFloat(selectedOption.dataset.unitPrice);
-      handleProductClick(productId, itemName, unitPrice);
-
-      // Optional: scroll table to the selected product row
-      const row = Array.from(productList.children).find(r => r.cells[0].textContent === productId);
-      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 });
 
 document.getElementById('quotationLogo').addEventListener('change', function(e){
@@ -624,7 +574,6 @@ function handleProductClick(productId, itemName, unitPrice) {
     });
 }
 
-<<<<<<< HEAD
 function adjustMaterialCosts(item) {
     // Recalculate material line costs from unit_cost and used_quantity
     if (!item.materials || item.materials.length === 0) return;
@@ -635,27 +584,16 @@ function adjustMaterialCosts(item) {
     }));
 }
 
-=======
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
 
 function renderCart() {
   const cart = document.getElementById('orderCart');
-<<<<<<< HEAD
   const totalsDiv = document.getElementById('orderTotals');
-=======
-  const totalsDiv = document.getElementById('orderTotals'); // new totals div
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
   cart.innerHTML = '';
   let totalProductCost = 0;
   let totalMaterialCost = 0;
 
-<<<<<<< HEAD
   if (orderCart.length === 0) {
-=======
-    if (orderCart.length === 0) {
-    // Placeholder row if cart is empty
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     cart.innerHTML = '<tr class="placeholder-row"><td colspan="6" class="text-center text-muted">No products added to the order cart</td></tr>';
     totalsDiv.innerHTML = '<div class="placeholder-text text-center text-muted">No items in the cart yet</div>';
     return;
@@ -715,7 +653,6 @@ function renderCart() {
               </tr>
             </thead>
             <tbody>
-<<<<<<< HEAD
               ${item.materials.map((m, mIndex) => {
                   let materialCell = '';
 
@@ -778,21 +715,6 @@ function renderCart() {
                   `;
               }).join('')}
 
-=======
-              ${item.materials.map((m, mIndex) => `
-                <tr>
-                  <td>${m.item_name}</td>
-                  <td>
-                    <input type="number" min="0" step="0.01" value="${m.used_quantity}" 
-                          onchange="updateUsedQuantity('${item.product_id}', ${mIndex}, this.value)" 
-                          class="form-control form-control-sm" 
-                          style="width: 60px;" /> ${m.unit_measurement}
-                  </td>
-                  <td>₱${isNaN(m.unit_cost) ? '0.00' : m.unit_cost.toFixed(2)}</td>
-                  <td>₱${isNaN(m.line_cost) ? '0.00' : m.line_cost.toFixed(2)}</td>
-                </tr>
-              `).join('')}
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
             </tbody>
           </table>
         </td>
@@ -801,17 +723,12 @@ function renderCart() {
     }
   });
 
-<<<<<<< HEAD
-=======
-  // Populate the new totals div
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
   totalsDiv.innerHTML = `
     <div><strong>Grand Total Product Cost (with Misc Fees):</strong> ₱${totalProductCost.toFixed(2)}</div>
     <div><strong>Total Material Quotation Cost:</strong> ₱${totalMaterialCost.toFixed(2)}</div>
   `;
 }
 
-<<<<<<< HEAD
 // --- Update selected glass for material ---
 function updateSelectedGlass(productId, materialIndex, newMaterialId) {
   const item = orderCart.find(p => p.product_id === productId);
@@ -822,8 +739,6 @@ function updateSelectedGlass(productId, materialIndex, newMaterialId) {
   hideQuotationPreview();
 }
 
-=======
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 document.getElementById('clearAllBtn').addEventListener('click', () => {
   // Clear the quotation
   const quotation = document.getElementById('quotation');
@@ -1068,10 +983,6 @@ function clearCustomerForm() {
 function generateReceipt() {
   if (orderCart.length === 0) return alert("Cart is empty!");
 
-<<<<<<< HEAD
-=======
-  // --- Customer validation ---
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
   const fields = ["firstname", "lastname", "contact_number", "email", "address"];
   for (const field of fields) {
     const el = document.getElementById(field);
@@ -1082,11 +993,7 @@ function generateReceipt() {
     }
   }
 
-<<<<<<< HEAD
   hideReceiptPreview();
-=======
-  hideReceiptPreview(); // Clear previous preview if any
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
   const customer = {
     firstname: document.getElementById('firstname').value.trim(),
@@ -1104,11 +1011,7 @@ function generateReceipt() {
     address: customer.address,
     phone: customer.contact_number,
     down_payment: downPayment,
-<<<<<<< HEAD
     company_name: companyName || null,
-=======
-    company_name: companyName || null, //pass null if blank
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
     items: orderCart.map(item => ({
       unit_id: item.product_id,
       name: item.item_name,
@@ -1196,10 +1099,6 @@ function generateQuotation() {
     }
   }
 
-<<<<<<< HEAD
-=======
-  // Get bullet point sections
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
   const getBullets = (sectionId) =>
     Array.from(document.querySelectorAll(`#${sectionId} input`))
       .map(el => el.value.trim())
@@ -1254,7 +1153,6 @@ function generateQuotation() {
     company_contact: companyContact
   };
 
-<<<<<<< HEAD
   // Include logo if selected
   if (quotationLogoFile) {
     const reader = new FileReader();
@@ -1269,15 +1167,11 @@ function generateQuotation() {
 }
 
 function sendQuotationPayload(payload) {
-=======
-
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
   fetch("/api/generate-quotation", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
-<<<<<<< HEAD
   .then(res => {
     if (!res.ok) throw new Error("Failed to generate quotation");
     return res.blob();
@@ -1289,16 +1183,6 @@ function sendQuotationPayload(payload) {
 
     iframe.src = url;
     iframe.style.display = "block";
-=======
-    .then(res => {
-      if (!res.ok) throw new Error("Failed to generate quotation");
-      return res.blob();
-    })
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      const iframe = document.getElementById("quotationPreview");
-      const downloadLink = document.getElementById("downloadQuotationLink");
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
     downloadLink.href = url;
     downloadLink.download = "quotation.pdf";

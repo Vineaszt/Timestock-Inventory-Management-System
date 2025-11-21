@@ -1,20 +1,12 @@
 from reportlab.lib.pagesizes import mm,letter, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-<<<<<<< HEAD
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, Image
-=======
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from datetime import datetime
 import calendar
 from xml.sax.saxutils import escape
-<<<<<<< HEAD
 import time, os, base64,io
-=======
-import time, os
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
 
 def cleanup_old_pdfs(directory, max_age_minutes=10):
@@ -42,11 +34,7 @@ def estimate_height(num_items):
 
 def generate_unofficial_receipt(
     filename, company_name, customer_name, address, phone,
-<<<<<<< HEAD
     items, down_payment, logo_data=None
-=======
-    items, down_payment
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 ):
     receipt_width = 80 * mm
     receipt_height = estimate_height(len(items))
@@ -61,15 +49,12 @@ def generate_unofficial_receipt(
     center_bold = ParagraphStyle(name="CenterBold", parent=bold, alignment=1)
 
     elements = []
-<<<<<<< HEAD
     if logo_data:
         logo_bytes = io.BytesIO(base64.b64decode(logo_data.split(",")[-1]))
         img = Image(logo_bytes, width=40, height=40)  # adjust size as needed
         img.hAlign = 'CENTER'
         elements.append(img)
         elements.append(Spacer(1, 5))
-=======
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
     # Header
     elements.append(Paragraph(company_name.upper(), center_bold))
@@ -158,12 +143,8 @@ def generate_modern_quotation_pdf(
     lead_time,
     company_name="Times Stock Aluminum & Glass Services",
     company_address=None,
-<<<<<<< HEAD
     company_contact=None,
     logo_data=None
-=======
-    company_contact=None
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 ):
     styles = getSampleStyleSheet()
     normal = styles['Normal']
@@ -175,15 +156,12 @@ def generate_modern_quotation_pdf(
     section_title = ParagraphStyle(name="SectionTitle", fontName="Helvetica-Bold", fontSize=11, textColor=colors.HexColor("#003e74"))
 
     elements = []
-<<<<<<< HEAD
     if logo_data:
         logo_bytes = io.BytesIO(base64.b64decode(logo_data.split(",")[-1]))
         img = Image(logo_bytes, width=80, height=80)  # adjust size as needed
         img.hAlign = 'CENTER'
         elements.append(img)
         elements.append(Spacer(1, 10))
-=======
->>>>>>> 998790e18aa343458a92ca046fa99446a4bb0913
 
     elements.append(Paragraph(company_name, company))
     elements.append(Paragraph("QUOTATION", title))
